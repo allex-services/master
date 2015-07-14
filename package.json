@@ -1,0 +1,21 @@
+{
+  "name": "allex_masterservice",
+  "version": "0.1.1",
+  "description": "MasterService",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitlab.hers.rs:allex_services/master.git"
+  },
+  "keywords": [
+    "ecosystem:allex",
+    "Service",
+    "Master"
+  ],
+  "author": "HERS Belgrade",
+  "license": "ISC"
+}
+
