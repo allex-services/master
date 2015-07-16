@@ -1,3 +1,15 @@
+var _taskName2moduleName = {
+  materializeState: '.',
+  transmitTcp: '.',
+  materializeData: 'allex_dataservice',
+  forwardData: 'allex_dataservice',
+  monitorSubservices: 'allex_servicecontainerservice',
+  fetchOrCreateWithData: 'allex_directoryservice',
+  transmitFile: 'allex_directoryservice',
+  downloadFile: 'allex_directoryservice',
+  registerUpload: 'allex_cgiservice',
+  registerDownload: 'allex_cgiservice'
+};
 function createFindAndRunTask(execlib){
   'use strict';
   var lib = execlib.lib,
@@ -57,13 +69,25 @@ function createFindAndRunTask(execlib){
       if('function' === typeof this.program.task.name){
         this.program.task.name(tph);
       }else{
-        taskRegistry.run(this.program.task.name,tph);
+        this.prepareToIgnite(tph);
       }
     }
     catch(e){
       console.log(e.stack);
       console.log(e);
     }
+  };
+  FindAndRunTask.prototype.prepareToIgnite = function (tph) {
+    var modulename = _taskName2moduleName[this.program.task.name];
+    if (!modulename) {
+      throw lib.Error('PROGRAM_TASK_NAME_NOT_REGISTERED','Software vendor needs to update the lookup table for Task named '+this.program.task.name);
+    }
+    registry.register(modulename).done(this.onModuleReadyForIgnite.bind(this,tph));
+    this.log('registered',modulename,'to ignite',this.program.task.name);
+  };
+  FindAndRunTask.prototype.onModuleReadyForIgnite = function (tph) {
+    this.log('igniting',this.program.task.name,'with',tph);
+    taskRegistry.run(this.program.task.name,tph);
   };
   FindAndRunTask.prototype.checkProgram = function (program) {
     if (!program.sinkname){
