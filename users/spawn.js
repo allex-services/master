@@ -125,7 +125,7 @@ function start(mastersink){
   );*/
 }
 
-toolbox.allex.config.init(2,tryStart,true); //true => skip updating
+toolbox.allex.config.init(3,tryStart,true); //true => skip updating
 
 function tryStart(should){
   if(!should){
