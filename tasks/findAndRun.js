@@ -85,9 +85,16 @@ function createFindAndRunTask(execlib){
     registry.register(modulename).done(this.onModuleReadyForIgnite.bind(this,tph));
     this.log('registered',modulename,'to ignite',this.program.task.name);
   };
-  FindAndRunTask.prototype.onModuleReadyForIgnite = function (tph) {
+  FindAndRunTask.prototype.onModuleReadyForIgnite = function (tph, servicepack) {
+    this.log(registry.get('allex_cgiservice'));
     this.log('igniting',this.program.task.name,'with',tph);
-    taskRegistry.run(this.program.task.name,tph);
+    try{
+      taskRegistry.run(this.program.task.name,tph);
+    } catch (e) {
+      console.error('on servicepack', servicepack);
+      console.error(e.stack);
+      console.error(e);
+    }
   };
   FindAndRunTask.prototype.checkProgram = function (program) {
     if (!program.sinkname){
