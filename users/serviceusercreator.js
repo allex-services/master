@@ -23,8 +23,7 @@ function createServiceUser(execlib,ParentUser){
     }else if(spawndescriptor.debug_brk){
       forkstring += ('&debug_brk='+spawndescriptor.debug_brk);
     }
-    console.log('asking for fork with string', forkstring);
-    registry.spawn({},forkstring/*+(name==='Time'? '&debug_brk=5858' : '')*/,{}).done(
+    registry.spawn({},forkstring,{}).done(
       this._onSpawned.bind(this,defer,spawndescriptor),
       this._onSpawnFailed.bind(this,defer)
     );
