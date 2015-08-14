@@ -14,12 +14,17 @@ function createServiceUser(execlib,ParentUser){
   ParentUser.inherit(ServiceUser,require('../methoddescriptors/serviceuser'),[],require('../visiblefields/serviceuser'));
   ServiceUser.prototype.onReadyForSpawn = function(spawndescriptor,defer){
     spawndescriptor.masterpid = process.pid;
-    var phj = JSON.stringify(spawndescriptor.propertyhash);
     var envj = JSON.stringify({
       ALLEX_SPAWN:spawndescriptor
-    });
-    //console.log('env json',envj);
-    registry.spawn({},'fork://'+__dirname+'/spawn.js?env='+envj/*+(name==='Time'? '&debug_brk=5858' : '')*/,{}).done(
+    }),
+      forkstring = 'fork://'+__dirname+'/spawn.js?env='+envj;
+    if(spawndescriptor.debug){
+      forkstring += ('&debug='+spawndescriptor.debug);
+    }else if(spawndescriptor.debug_brk){
+      forkstring += ('&debug_brk='+spawndescriptor.debug_brk);
+    }
+    console.log('asking for fork with string', forkstring);
+    registry.spawn({},forkstring/*+(name==='Time'? '&debug_brk=5858' : '')*/,{}).done(
       this._onSpawned.bind(this,defer,spawndescriptor),
       this._onSpawnFailed.bind(this,defer)
     );

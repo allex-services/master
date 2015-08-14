@@ -22,7 +22,9 @@ module.exports = {
     },{
       name: 'pid'
     },{
-      name: 'time' //for testing only!
+      name: 'debug' //for testing only!
+    },{
+      name: 'debug_brk'
     }]
   }
 };

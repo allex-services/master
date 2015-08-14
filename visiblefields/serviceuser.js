@@ -1,1 +1,1 @@
-module.exports = ['tcpport','httpport','wsport','pid','time'];
+module.exports = ['tcpport','httpport','wsport','pid','debug','debug_brk'];
