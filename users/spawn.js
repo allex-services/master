@@ -30,6 +30,7 @@ console.log = function(){
 */
 
 execSuite.installFromError = toolbox.allex.commands.install;
+execSuite.firstFreePortStartingWith = toolbox.allex.portSuite.reserve;
 
 toolbox.unixsocketcleaner('/tmp/allexprocess.'+process.pid);
 execSuite.registry.register('allex_masterservice'); //to get the 'findSink' task registered

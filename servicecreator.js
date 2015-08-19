@@ -19,14 +19,6 @@ function createMasterService(execlib,ParentServicePack){
     this.startport = null;
   };
   UsedPorts.prototype.next = function(){
-    /*
-    var ret = this.startport;
-    while(this.ports.find(ret)){
-      ret++;
-    }
-    this.ports.add(ret);
-    return ret;
-    */
     return execSuite.firstFreePortStartingWith(this.startport);
   };
   UsedPorts.prototype.reclaim = function(port){
