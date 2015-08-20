@@ -65,7 +65,7 @@ function createNatThisTask(execlib) {
     }
   };
   NatThisTask.prototype.onNatLookup = function (address, port) {
-    console.log('nat record!', address, port);
+    console.log('nat', this.iaddress+':'+this.iport, '=>', address+':'+port);
     if(!this.cb){
       return;
     }
