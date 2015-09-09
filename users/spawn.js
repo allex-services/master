@@ -14,7 +14,7 @@ process.on ('uncaughtException', function (reason) {
 });
 
 'use strict';
-var toolbox = require('allex-toolbox'),
+var toolbox = require('allex-rt-toolbox'),
     execlib = require('allex'),
     lib = execlib.lib,
     execSuite = execlib.execSuite,
