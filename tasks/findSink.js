@@ -7,6 +7,50 @@ function createFindSinkTask(execlib){
       taskRegistry = execSuite.taskRegistry,
       Task = execSuite.Task;
 
+  function SubSinkHunter(findsinktask, sink) {
+    this.task = findsinktask;
+    this.acquired = 0;
+    this.destroyListeners = [
+      sink.destroyed.attach(this.destroy.bind(this))
+    ];
+    this.goOn(sink);
+  }
+  SubSinkHunter.prototype.destroy = function () {
+    lib.arryDestroyAll(this.destroyListeners);
+    this.acquired = null;
+    this.task = null;
+  };
+  SubSinkHunter.prototype.goOn = function (sink) {
+    if (this.acquired+1 === this.task.sinkname.length) {
+      //console.log('SubSinkHunter got it!,',this.acquired+1,'===', this.task.sinkname.length, 'will call onSink');
+      this.task.onSink(sink);
+    } else {
+      //console.log('SubSinkHunter still has to go,',this.acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[this.acquired+1]);
+      try {
+      taskRegistry.run('acquireSubSinks',{
+        debug:true,
+        state:taskRegistry.run('materializeState',{
+          sink: sink
+        }),
+        subinits:[{
+          name: this.task.getSinkName(this.acquired+1),
+          identity: this.task.getIdentity(this.acquired+1),
+          propertyhash: this.task.getPropertyHash(this.acquired+1),
+          cb: this.onSubSink.bind(this)
+        }]
+      });
+      } catch (e) {
+        console.error(e.stack);
+        console.error(e);
+      }
+    }
+  };
+  SubSinkHunter.prototype.onSubSink = function (sink) {
+    //console.log('SubSinkHunter got subsink');
+    this.acquired++;
+    this.goOn(sink);
+  };
+
   function SinkHunter(task,level){
     this.task = task;
     this.level = level;
@@ -41,7 +85,7 @@ function createFindSinkTask(execlib){
 
   function RegistrySinkHunter(task,level){
     SinkHunter.call(this,task,level);
-    this.supersink = registry.getSuperSink(this.task.sinkname);
+    this.supersink = registry.getSuperSink(this.task.getSinkName());
     this.superSinkEventListener = registry.onSuperSink.attach(this.onSuperSink.bind(this));
   }
   lib.inherit(RegistrySinkHunter,SinkHunter);
@@ -60,7 +104,7 @@ function createFindSinkTask(execlib){
     if(!this.supersink){
       return;
     }
-    this.supersink.subConnect('.',this.task.identity,this.task.prophash).done(
+    this.supersink.subConnect('.',this.task.getIdentity(),this.task.getPropertyHash()).done(
       this.reportSink.bind(this),
       this.onFail.bind(this)
     );
@@ -70,7 +114,7 @@ function createFindSinkTask(execlib){
     lib.runNext(this.rego.bind(this));
   };
   RegistrySinkHunter.prototype.onSuperSink = function(name,supersink){
-    if(name!==this.task.sinkname){
+    if(name!==this.task.getSinkName()){
       return;
     }
     this.supersink = supersink;
@@ -123,7 +167,7 @@ function createFindSinkTask(execlib){
           filter: {
             op: 'eq',
             field: 'instancename',
-            value: this.task.sinkname
+            value: this.task.getSinkName()
           }
         }
       },
@@ -165,8 +209,8 @@ function createFindSinkTask(execlib){
     this.acquireSinkTask = taskRegistry.run('acquireSink',prophash);
     }
     catch(e){
-      console.log(e.stack);
-      console.log(e);
+      console.error(e.stack);
+      console.error(e);
     }
   };
   RemoteSinkHunter.prototype.onSinkRecordDeleted = function(sinkrecord){
@@ -194,8 +238,9 @@ function createFindSinkTask(execlib){
   };
   MachineRecordSinkHunter.prototype.createAcquireSinkPropHash = function(sinkrecord){
     var smi = {pid:process.pid};
-    for(var i in this.task.identity){
-      smi[i] = this.task.identity[i];
+    var idnt = this.task.getIdentity();
+    for(var i in idnt){
+      smi[i] = idnt[i];
     }
     return {
       connectionString: 'socket:///tmp/allexprocess.'+sinkrecord.pid,
@@ -220,7 +265,7 @@ function createFindSinkTask(execlib){
       console.error('Could not make the connectionString out of lansinkrecord',sinkrecord);
       return null;
     }
-    var strategiesimplemented = Object.keys(sinkrecord.strategies), myidentity = this.task.identity, identity;
+    var strategiesimplemented = Object.keys(sinkrecord.strategies), myidentity = this.task.getIdentity(), identity;
     if(strategiesimplemented.length){
       identity = {};
       strategiesimplemented.forEach(function(strat){
@@ -257,6 +302,7 @@ function createFindSinkTask(execlib){
       new LanSinkHunter(this,2)
     ];
     this.sinkDestroyedListener = null;
+    this.subSinkHunter = null;
   }
   lib.inherit(FindSinkTask,Task);
   FindSinkTask.prototype.destroy = function(){
@@ -264,6 +310,10 @@ function createFindSinkTask(execlib){
     console.trace();
     console.log('destroying');
     */
+    if (this.subSinkHunter) {
+      this.subSinkHunter.destroy();
+    }
+    this.subSinkHunter = null;
     if(this.sinkDestroyedListener){
       this.sinkDestroyedListener.destroy();
     }
@@ -288,6 +338,26 @@ function createFindSinkTask(execlib){
     this.hunters.forEach(function(h){
       h.go();
     });
+  };
+  FindSinkTask.prototype.getSinkName = function (index) {
+    if (lib.isArray(this.sinkname)) {
+      return this.sinkname[index||0].name || this.sinkname[index||0];
+    }
+    return this.sinkname;
+  };
+  FindSinkTask.prototype.getIdentity = function (index) {
+    if (lib.isArray(this.sinkname)) {
+      return this.sinkname[index||0].identity || {};
+    } else {
+      return this.identity;
+    }
+  };
+  FindSinkTask.prototype.getPropertyHash = function (index) {
+    if (lib.isArray(this.sinkname)) {
+      return this.sinkname[index||0].propertyhash || {};
+    } else {
+      return this.prophash;
+    }
   };
   FindSinkTask.prototype.reportSink = function(sink,level,record){
     this.log('FindSinkTask got a sink',arguments);
@@ -327,7 +397,14 @@ function createFindSinkTask(execlib){
     this.sink = sink;
     this.sinkrecord = record;
     this.foundatlevel = level;
-    this.onSink(sink);
+    if (lib.isArray(this.sinkname)) {
+      if (this.subSinkHunter) {
+        this.subSinkHunter.destroy();
+      }
+      this.subSinkHunter = new SubSinkHunter(this, sink);
+    } else {
+      this.onSink(sink);
+    }
   };
   FindSinkTask.prototype.forgetSink = function(level){
     if(level === this.foundatlevel){
