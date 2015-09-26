@@ -347,6 +347,9 @@ function createFindSinkTask(execlib){
   };
   FindSinkTask.prototype.getIdentity = function (index) {
     if (lib.isArray(this.sinkname)) {
+      if (index===this.sinkname.length-1) {
+        return this.identity;
+      }
       return this.sinkname[index||0].identity || {};
     } else {
       return this.identity;
@@ -354,6 +357,9 @@ function createFindSinkTask(execlib){
   };
   FindSinkTask.prototype.getPropertyHash = function (index) {
     if (lib.isArray(this.sinkname)) {
+      if (index===this.sinkname.length-1) {
+        return this.prophash;
+      }
       return this.sinkname[index||0].propertyhash || {};
     } else {
       return this.prophash;
