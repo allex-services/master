@@ -6,6 +6,9 @@ function createClientSide(execlib,ParentServicePack) {
       name: 'findSink',
       klass: require('./tasks/findSink')(execlib)
     },{
+      name: 'findSinksByModuleName',
+      klass: require('./tasks/findSinksByModule')(execlib)
+    },{
       name: 'findAndRun',
       klass: require('./tasks/findAndRun')(execlib)
     },{
