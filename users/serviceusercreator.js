@@ -36,10 +36,10 @@ function createServiceUser(execlib,ParentUser){
     },d.reject.bind(d));
     return d.promise;
   };
-  ServiceUser.prototype.acquireSink = function(spawndescriptor,defer){
-    var modulename = spawndescriptor.modulename,
-        name = spawndescriptor.instancename;
-    //console.log('should spawn',modulename,'as',name,'from',__dirname,spawndescriptor);
+  ServiceUser.prototype.acquireSink = function(spawnrecord, spawndescriptor, defer){
+    var modulename = spawnrecord.modulename,
+        name = spawnrecord.instancename;
+    //console.log('should spawn',modulename,'as',name,'from',__dirname,spawnrecord);
     try{
       registry.register(modulename);
     }
@@ -49,11 +49,11 @@ function createServiceUser(execlib,ParentUser){
       defer.reject(e);
       return;
     }
-    //console.log('spawndescriptor:',spawndescriptor);
-    q.allSettled([this.getPort('tcp',spawndescriptor),
-      this.getPort('http',spawndescriptor),
-      this.getPort('ws',spawndescriptor)]).done(
-      this.onReadyForSpawn.bind(this,spawndescriptor,defer),
+    //console.log('spawnrecord:',spawnrecord);
+    q.allSettled([this.getPort('tcp',spawnrecord),
+      this.getPort('http',spawnrecord),
+      this.getPort('ws',spawnrecord)]).done(
+      this.onReadyForSpawn.bind(this,spawnrecord,defer),
       defer.reject.bind(defer)
     );
   };
