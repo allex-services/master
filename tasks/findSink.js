@@ -24,6 +24,10 @@ function createFindSinkTask(execlib){
     if (!this.task) {
       return;
     }
+    if (!sink) {
+      this.acquired = 0;
+      return;
+    }
     if (this.acquired+1 === this.task.sinkname.length) {
       //console.log('SubSinkHunter got it!,',this.acquired+1,'===', this.task.sinkname.length, 'will call onSink');
       this.task.onSink(sink);
