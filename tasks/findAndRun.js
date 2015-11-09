@@ -64,6 +64,7 @@ function createFindAndRunTask(execlib){
       var tph = this.program.task.propertyhash || {};
       tph.sink = sink;
       tph.taskRegistry = taskRegistry;
+      tph.execlib = execlib;
       lib.traverse(tph,this.fillAsNeeded.bind(this,tph));
       this.log('going for',this.program.task.name);
       if('function' === typeof this.program.task.name){
