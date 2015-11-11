@@ -14,6 +14,9 @@ function createClientSide(execlib,ParentServicePack) {
     },{
       name: 'natThis',
       klass: require('./tasks/natThis')(execlib)
+    },{
+      name: 'findMasterPid',
+      klass: require('./tasks/findMasterPid')(execlib)
     }]
   };
 }
