@@ -1,4 +1,5 @@
-var _taskName2moduleName = {
+var _taskName2moduleName = {};
+/*
   materializeState: '.',
   transmitTcp: '.',
   materializeData: 'allex_dataservice',
@@ -10,6 +11,7 @@ var _taskName2moduleName = {
   registerUpload: 'allex_cgiservice',
   registerDownload: 'allex_cgiservice'
 };
+*/
 function createFindAndRunTask(execlib){
   'use strict';
   var lib = execlib.lib,
@@ -79,12 +81,29 @@ function createFindAndRunTask(execlib){
     }
   };
   FindAndRunTask.prototype.prepareToIgnite = function (tph) {
+    registry.register(tph.sink.modulename).then(this.onRemoteService.bind(this,tph));
+    /*
     var modulename = _taskName2moduleName[this.program.task.name];
     if (!modulename) {
       throw lib.Error('PROGRAM_TASK_NAME_NOT_REGISTERED','Software vendor needs to update the lookup table for Task named '+this.program.task.name);
     }
     registry.register(modulename).done(this.onModuleReadyForIgnite.bind(this,tph));
     this.log('registered',modulename,'to ignite',this.program.task.name);
+    */
+  };
+  FindAndRunTask.prototype.onRemoteService = function (tph, remoteservice) {
+    var pn = this.program.task.name,
+      task = execSuite.taskRegistry.get(pn);
+    if (!task) {
+      console.error('ooops, no task for', pn);
+    }
+    try{
+      taskRegistry.run(pn,tph);
+    } catch (e) {
+      console.error('on servicepack', servicepack);
+      console.error(e.stack);
+      console.error(e);
+    }
   };
   FindAndRunTask.prototype.onModuleReadyForIgnite = function (tph, servicepack) {
     this.log(registry.get('allex_cgiservice'));
