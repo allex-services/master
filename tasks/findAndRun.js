@@ -93,7 +93,7 @@ function createFindAndRunTask(execlib){
   };
   FindAndRunTask.prototype.onRemoteService = function (tph, remoteservice) {
     var pn = this.program.task.name,
-      task = execSuite.taskRegistry.get(pn);
+      task = execSuite.taskRegistry.ctors.get(pn);
     if (!task) {
       console.error('ooops, no task for', pn);
     }
