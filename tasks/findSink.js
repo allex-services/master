@@ -30,6 +30,7 @@ function createFindSinkTask(execlib){
     }
     if (this.acquired+1 === this.task.sinkname.length) {
       //console.log('SubSinkHunter got it!,',this.acquired+1,'===', this.task.sinkname.length, 'will call onSink');
+      this.acquired = 0;
       this.task.onSink(sink);
     } else {
       //console.log('SubSinkHunter still has to go,',this.acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[this.acquired+1]);
@@ -348,6 +349,12 @@ function createFindSinkTask(execlib){
   };
   FindSinkTask.prototype.getSinkName = function (index) {
     if (lib.isArray(this.sinkname)) {
+      var s = this.sinkname[index||0];
+      if (!s) {
+        console.log('What the #! is in this.sinkname?', this.sinkname, 'for index', index);
+        this.destroy();
+        return null;
+      }
       return this.sinkname[index||0].name || this.sinkname[index||0];
     }
     return this.sinkname;
