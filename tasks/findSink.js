@@ -419,6 +419,9 @@ function createFindSinkTask(execlib){
       return;
     }
     this.foundatlevel = level;
+    if (!this.sinkrecord) {
+      this.sinkrecord = record;
+    }
     if (lib.isArray(this.sinkname) && !this.subSinkHunter) {
       this.subSinkHunter = new SubSinkHunter(this, sink, level);
     } else {
@@ -426,7 +429,6 @@ function createFindSinkTask(execlib){
       this.hunters = null;
       this.sinkDestroyedListener = sink.destroyed.attach(this.forgetSink.bind(this,level));
       this.sink = sink;
-      this.sinkrecord = record;
       this.onSink(sink);
     }
   };
