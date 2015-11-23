@@ -37,11 +37,11 @@ function createFindSinkTask(execlib){
       return;
     }
     if (acquired+1 === this.task.sinkname.length) {
-      console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');
+      //console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');
       //this.task.onSink(sink);
       this.task.reportSink(sink, this.level);
     } else {
-      console.log('SubSinkHunter still has to go,',acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[acquired+1]);
+      //console.log('SubSinkHunter still has to go,',acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[acquired+1]);
       taskRegistry.run('acquireSubSinks',{
         debug:true,
         state:taskRegistry.run('materializeState',{
@@ -306,9 +306,9 @@ function createFindSinkTask(execlib){
   lib.inherit(FindSinkTask,Task);
   FindSinkTask.prototype.destroy = function(){
     /*
-    */
     console.trace();
     console.log('FindSinkTask', this.sinkname, 'destroying');
+    */
     if (this.subSinkHunter) {
       this.subSinkHunter.destroy();
     }
@@ -336,7 +336,7 @@ function createFindSinkTask(execlib){
     if(!this.onSink){
       return;
     }
-    console.log('FindSinkTask go for', this.sinkname, 'with', this.identity);
+    //console.log('FindSinkTask go for', this.sinkname, 'with', this.identity);
     if (this.hunters) {
       lib.arryDestroyAll(this.hunters);
     }
@@ -433,7 +433,7 @@ function createFindSinkTask(execlib){
     }
   };
   FindSinkTask.prototype.forgetSink = function(level){
-    console.log('forgetSink!', this.sinkname, 'level', level, 'foundatlevel', this.foundatlevel);
+    //console.log('forgetSink!', this.sinkname, 'level', level, 'foundatlevel', this.foundatlevel);
     if(level === this.foundatlevel){
       this.sinkDestroyedListener.destroy();
       this.sinkDestroyedListener = null;
