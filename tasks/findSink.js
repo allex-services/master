@@ -38,7 +38,6 @@ function createFindSinkTask(execlib){
     }
     if (acquired+1 === this.task.sinkname.length) {
       //console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');
-      //this.task.onSink(sink);
       this.task.reportSink(sink, this.level);
     } else {
       //console.log('SubSinkHunter still has to go,',acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[acquired+1]);
@@ -296,7 +295,7 @@ function createFindSinkTask(execlib){
     this.prophash = prophash.propertyhash;
     this.onSink = prophash.onSink;
     this.addressinfo = prophash.addressinfo;
-    this.sink = null
+    this.sink = null;
     this.sinkrecord = null;
     this.foundatlevel = null;
     this.hunters = null;
@@ -429,7 +428,7 @@ function createFindSinkTask(execlib){
       this.hunters = null;
       this.sinkDestroyedListener = sink.destroyed.attach(this.forgetSink.bind(this,level));
       this.sink = sink;
-      this.onSink(sink);
+      this.callbackTheSink(sink);
     }
   };
   FindSinkTask.prototype.forgetSink = function(level){
@@ -444,8 +443,17 @@ function createFindSinkTask(execlib){
         this.subSinkHunter.destroy();
       }
       this.subSinkHunter = null;
-      this.onSink(null);
+      this.callbackTheSink(null);
       lib.runNext(this.go.bind(this));
+    }
+  };
+  FindSinkTask.prototype.callbackTheSink = function (sink) {
+    if (!this.onSink) {
+      this.destroy();
+    }
+    var onsinkret = this.onSink(sink);
+    if (onsinkret === true) {
+      this.destroy();
     }
   };
   FindSinkTask.prototype.compulsoryConstructionProperties = ['sinkname','onSink'];
