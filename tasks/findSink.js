@@ -106,6 +106,7 @@ function createFindSinkTask(execlib){
     if(!this.supersink){
       return;
     }
+    //console.log('will say subConnect with ident', this.task.getIdentity(), 'with prophash', this.task.getPropertyHash());
     this.supersink.subConnect('.',this.task.getIdentity(),this.task.getPropertyHash()).done(
       this.reportSink.bind(this),
       this.onFail.bind(this)
@@ -278,6 +279,7 @@ function createFindSinkTask(execlib){
         ip: myidentity
       };
     }
+    //console.log(connectionString, '=> OUTGOING IDENT ', identity, 'because', myidentity, '(', this.task.identity, ')');
     return {
       connectionString: connectionString,
       identity: identity
@@ -361,6 +363,7 @@ function createFindSinkTask(execlib){
     return this.sinkname;
   };
   FindSinkTask.prototype.getIdentity = function (index) {
+    index = index || 0;
     if (lib.isArray(this.sinkname)) {
       if (index===this.sinkname.length-1) {
         return this.identity;
