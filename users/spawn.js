@@ -31,6 +31,7 @@ console.log = function(){
 
 execSuite.installFromError = toolbox.allex.commands.install;
 execSuite.firstFreePortStartingWith = toolbox.allex.portSuite.reserve;
+execSuite.isPortFree = toolbox.allex.portSuite.check;
 
 toolbox.unixsocketcleaner('/tmp/allexprocess.'+process.pid);
 execSuite.registry.register('allex_masterservice'); //to get the 'findSink' task registered
@@ -105,6 +106,7 @@ function onNewServicePack(mastersink,newmodulename){
 }
 
 function start(mastersink){
+  APD.mastersink = mastersink;
   if(!mastersink){
     //master is dead, so... die...
     process.exit(0);

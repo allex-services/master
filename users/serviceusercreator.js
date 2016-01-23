@@ -2,6 +2,7 @@ function createServiceUser(execlib,ParentUser){
   'use strict';
   var lib = execlib.lib,
     q = lib.q,
+    qlib = lib.qlib,
     registry = execlib.execSuite.registry;
 
   if(!ParentUser){
@@ -75,6 +76,13 @@ function createServiceUser(execlib,ParentUser){
     if(this.__service.onChildModuleEngaged){
       this.__service.onChildModuleEngaged(modulename);
     }
+    defer.resolve(true);
+  };
+  ServiceUser.prototype.addNeed = function (needobj, defer) {
+    qlib.promise2defer(this.__service.addNeed(needobj), defer);
+  };
+  ServiceUser.prototype.removeNeed = function (instancename, defer) {
+    qlib.promise2defer(this.__service.removeNeed(instancename), defer);
   };
 
   return ServiceUser;

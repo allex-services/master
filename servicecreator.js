@@ -4,7 +4,8 @@ function createMasterService(execlib,ParentServicePack){
     execSuite = execlib.execSuite,
     dataSuite = execlib.dataSuite,
     NullStorage = dataSuite.NullStorage,
-    lib = execlib.lib;
+    lib = execlib.lib,
+    qlib = lib.qlib;
 
   function factoryCreator(parentFactory){
     return {
@@ -30,10 +31,14 @@ function createMasterService(execlib,ParentServicePack){
     this.tcpports = new UsedPorts(prophash.portrangestart.tcp || 15000);
     this.httpports = new UsedPorts(prophash.portrangestart.http || 16000);
     this.wsports = new UsedPorts(prophash.portrangestart.ws || 17000);
-    this.onChildModuleEngaged = prophash.onChildModuleEngaged;
+    this.lanManagerAvailable = prophash.lanManagerAvailable.attach(this.onLanManager.bind(this));
   }
   ParentService.inherit(MasterService,factoryCreator,require('./storagedescriptor'));
   MasterService.prototype.__cleanUp = function(){
+    if (this.lanManagerAvailable) {
+      this.lanManagerAvailable.destroy();
+    }
+    this.lanManagerAvailable = null;
     this.onChildModuleEngaged = null;
     this.tcpports.destroy();
     this.tcpports = null;
@@ -46,6 +51,20 @@ function createMasterService(execlib,ParentServicePack){
   MasterService.prototype.createStorage = function(storagedescriptor){
     return ParentService.prototype.createStorage.call(this,storagedescriptor);
   };
+  MasterService.prototype.onLanManager = function (lanmanager) {
+    if (lanmanager) {
+      this.state.set('lanmanager', lanmanager);
+    } else {
+      this.state.remove('lanmanager');
+    }
+  };
+  MasterService.prototype.addNeed = execSuite.dependentServiceMethod([], ['lanmanager'], function (lmsink, needobj, defer) {
+    qlib.promise2defer(lmsink.call('addNeed', needobj), defer);
+  });
+  MasterService.prototype.removeNeed = execSuite.dependentServiceMethod([], ['lanmanager'], function (lmsink, instancename, defer) {
+    qlib.promise2defer(lmsink.call('removeNeed', instancename), defer);
+  });
+
   return MasterService;
 }
 
