@@ -120,12 +120,19 @@ function start(mastersink){
       propertyhash:APD.get('prophash')
     },
     ports:ports
-  });/*.done(
+  }).done(
+    monitorSuperSink
+  );
+  /*.done(
     //startProcessStats
     //contactMachineManager,
     null,
     null
   );*/
+}
+
+function monitorSuperSink(supersink) {
+  supersink.destroyed.attach(process.exit.bind(process,0));
 }
 
 toolbox.allex.config.init(3,tryStart,true); //true => skip updating
