@@ -34,6 +34,7 @@ function createFindAndRunTask(execlib){
   }
   lib.inherit(FindAndRunTask,Task);
   FindAndRunTask.prototype.destroy = function(){
+    console.log('FindAndRunTask dying');
     if(this.findSinkTask){
       this.findSinkTask.destroy();
     }
@@ -57,11 +58,10 @@ function createFindAndRunTask(execlib){
   FindAndRunTask.prototype.onSink = function(sink){
     try{
       if(!sink){
-        if('function' === typeof this.program.task.name){
-          this.program.task.name({sink:null});
+        if('function' !== typeof this.program.task.name || !this.program.continuous){
+          lib.runNext(this.destroy.bind(this));
+          return;
         }
-        lib.runNext(this.destroy.bind(this));
-        return;
       }
       var tph = this.program.task.propertyhash || {};
       tph.sink = sink;

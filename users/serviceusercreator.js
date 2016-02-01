@@ -71,6 +71,11 @@ function createServiceUser(execlib,ParentUser){
     this.__service.tcpports.reclaim(spawndescriptor.tcpport);
     this.__service.httpports.reclaim(spawndescriptor.httpport);
     this.__service.wsports.reclaim(spawndescriptor.wsport);
+    console.log('killing', spawndescriptor.pid);
+    try {
+      process.kill(spawndescriptor.pid);
+    } catch (ignore) {
+    }
   };
   ServiceUser.prototype.notifyModuleEngaged = function(modulename,defer){
     if(this.__service.onChildModuleEngaged){

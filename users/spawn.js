@@ -132,7 +132,11 @@ function start(mastersink){
 }
 
 function monitorSuperSink(supersink) {
-  supersink.destroyed.attach(process.exit.bind(process,0));
+  supersink.destroyed.attach(onSuperSinkDead);
+}
+
+function onSuperSinkDead() {
+  process.exit(0);
 }
 
 toolbox.allex.config.init(3,tryStart,true); //true => skip updating
