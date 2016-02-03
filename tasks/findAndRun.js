@@ -158,6 +158,9 @@ function createFindAndRunTask(execlib){
     }
   };
   FindAndRunTask.prototype.fillAsNeeded = function(prophash,prophashval,prophashname){
+    if(!prophashval) {
+      return;
+    }
     if(prophashval === 'fill yourself'){
       prophash[prophashname] = this['fill_'+prophashname]();
     }

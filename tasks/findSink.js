@@ -40,6 +40,7 @@ function createFindSinkTask(execlib){
     if (!sink) {
       return;
     }
+    sink.destroyed.attach(console.log.bind(console, 'intermediate sink at ', acquired, 'is ded'));
     this.destroyListeners.push(sink.destroyed.attach(this.destroy.bind(this)));
     if (acquired+1 === this.task.sinkname.length) {
       //console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');

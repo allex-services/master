@@ -71,9 +71,12 @@ function createServiceUser(execlib,ParentUser){
     this.__service.tcpports.reclaim(spawndescriptor.tcpport);
     this.__service.httpports.reclaim(spawndescriptor.httpport);
     this.__service.wsports.reclaim(spawndescriptor.wsport);
-    console.log('killing', spawndescriptor.pid);
+    lib.runNext(this.killChild.bind(this, spawndescriptor.pid), 30*lib.intervals.Second);
+  };
+  ServiceUser.prototype.killChild = function (childpid) {
+    console.log('killing', childpid);
     try {
-      process.kill(spawndescriptor.pid);
+      process.kill(childpid);
     } catch (ignore) {
     }
   };
