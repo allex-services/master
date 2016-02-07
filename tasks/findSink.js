@@ -21,12 +21,17 @@ function createFindSinkTask(execlib){
   }
   SubSinkHunter.prototype.destroy = function () {
     console.log('SubSinkHunter going down');
+    var l = this.level, t = this.task;
     if (this.destroyListeners) {
       lib.arryDestroyAll(this.destroyListeners);
     }
     this.destroyListeners = null;
+    this.level = null;
     this.task = null;
     this.startsink = null;
+    if (t) {
+      t.forgetSink(l);
+    }
   };
   SubSinkHunter.prototype.goOn = function (sink, acquired) {
     acquired = acquired || 0;
@@ -40,7 +45,6 @@ function createFindSinkTask(execlib){
     if (!sink) {
       return;
     }
-    sink.destroyed.attach(console.log.bind(console, 'intermediate sink at ', acquired, 'is ded'));
     this.destroyListeners.push(sink.destroyed.attach(this.destroy.bind(this)));
     if (acquired+1 === this.task.sinkname.length) {
       //console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');
@@ -444,7 +448,9 @@ function createFindSinkTask(execlib){
   FindSinkTask.prototype.forgetSink = function(level){
     console.log('forgetSink!', this.sinkname, 'level', level, 'foundatlevel', this.foundatlevel);
     if(level === this.foundatlevel){
-      this.sinkDestroyedListener.destroy();
+      if (this.sinkDestroyedListener) {
+        this.sinkDestroyedListener.destroy();
+      }
       this.sinkDestroyedListener = null;
       this.sink = null;
       this.sinkrecord = null;
