@@ -29,6 +29,12 @@ console.log = function(){
 };
 */
 
+var pe = process.exit;
+process.exit = function(code) {
+  console.trace();
+  pe.apply(process, arguments);
+}
+
 execSuite.installFromError = toolbox.allex.commands.install;
 execSuite.firstFreePortStartingWith = toolbox.allex.portSuite.reserve;
 execSuite.isPortFree = toolbox.allex.portSuite.check;
@@ -106,6 +112,7 @@ function onNewServicePack(mastersink,newmodulename){
 }
 
 function start(mastersink){
+  //console.log(process.pid, 'starting', mastersink ? 'with' : 'without', 'sink');
   APD.mastersink = mastersink;
   if(!mastersink){
     //master is dead, so... die...

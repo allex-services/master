@@ -14,6 +14,7 @@ function createFindSinkTask(execlib){
     this.startsink = sink;
     this.task = findsinktask;
     this.level = level;
+    this.intermediateSinks = [];
     this.destroyListeners = [
       sink.destroyed.attach(this.destroy.bind(this))
     ];
@@ -25,6 +26,10 @@ function createFindSinkTask(execlib){
       lib.arryDestroyAll(this.destroyListeners);
     }
     this.destroyListeners = null;
+    if (this.intermediateSinks) {
+      lib.arryDestroyAll(this.intermediateSinks);
+    }
+    this.intermediateSinks = null;
     this.level = null;
     this.task = null;
     this.startsink = null;
@@ -49,6 +54,7 @@ function createFindSinkTask(execlib){
       //console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');
       this.task.reportSink(sink, this.level);
     } else {
+      this.intermediateSinks.push(sink);
       //console.log('SubSinkHunter still has to go,',acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[acquired+1]);
       taskRegistry.run('acquireSubSinks',{
         debug:true,
@@ -157,10 +163,12 @@ function createFindSinkTask(execlib){
     }
     this.materializeDataTask = null;
     if(this.datasourcesink){
+      //console.log(process.pid, 'destroying datasourcesink');
       this.datasourcesink.destroy();
     }
     this.datasourcesink = null;
     if(this.baseAcquireSinkTask){
+      //console.log(process.pid, 'destroying baseAcquireSinkTask');
       this.baseAcquireSinkTask.destroy();
     }
     this.baseAcquireSinkTask = null;
@@ -346,7 +354,7 @@ function createFindSinkTask(execlib){
     if(!this.onSink){
       return;
     }
-    //console.log('FindSinkTask go for', this.sinkname, 'with', this.identity);
+    //console.log(process.pid, 'FindSinkTask go for', this.sinkname, 'with', this.identity);
     if (this.hunters) {
       lib.arryDestroyAll(this.hunters);
     }
