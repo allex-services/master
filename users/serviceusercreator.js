@@ -59,7 +59,7 @@ function createServiceUser(execlib,ParentUser){
     );
   };
   ServiceUser.prototype._onSpawned = function(defer,spawndescriptor,sink){
-    spawndescriptor.pid = sink.clientuser.client.proc.pid;
+    spawndescriptor.pid = sink.clientuser.client.talker.proc.pid;
     defer.resolve(sink);
     sink.extendTo(sink.destroyed.attach(this._onSinkDown.bind(this,spawndescriptor)));
   };
