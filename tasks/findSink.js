@@ -5,41 +5,37 @@ function createFindSinkTask(execlib){
       execSuite = execlib.execSuite,
       registry = execSuite.registry,
       taskRegistry = execSuite.taskRegistry,
-      Task = execSuite.Task;
+      Task = execSuite.Task,
+      sshid = 0;
 
   function SubSinkHunter(findsinktask, sink, level) {
+    //this.id = ++sshid;
     if (!sink) {
       console.error('SubSinkHunter cannot start on a null sink');
     }
-    this.startsink = sink;
     this.task = findsinktask;
     this.level = level;
     this.intermediateSink = null;
-    this.destroyListeners = [
-      sink.destroyed.attach(this.destroy.bind(this))
-    ];
+    this.destroyListeners = [ ];
     this.goOn(sink, 0);
   }
   SubSinkHunter.prototype.destroy = function () {
-    var l = this.level, t = this.task;
+    //console.log(this.id, 'dying');
+    var l = this.level;
     if (this.destroyListeners) {
       lib.arryDestroyAll(this.destroyListeners);
     }
     this.destroyListeners = null;
+    if (this.intermediateSink) {
+      this.intermediateSink.destroy();
+    }
     this.intermediateSink = null;
     this.level = null;
     this.task = null;
-    this.startsink = null;
-    if (t) {
-      t.forgetSink(l);
-    }
   };
   SubSinkHunter.prototype.goOn = function (sink, acquired) {
     acquired = acquired || 0;
     var foundit, ims;
-    if (!this.startsink) {
-      return;
-    }
     if (!this.task) {
       return;
     }
@@ -47,20 +43,14 @@ function createFindSinkTask(execlib){
       return;
     }
     this.destroyListeners.push(sink.destroyed.attach(this.destroy.bind(this)));
+    this.linkIntermediate(sink, acquired);
     if (acquired+1 === this.task.sinkname.length) {
       //console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');
       this.task.reportSink(sink, this.level);
     } else {
-      if (!this.intermediateSink) {
-        this.intermediateSink = sink;
-      } else {
-        ims = this.intermediateSink;
-        sink.destroyed.attach(ims.destroy.bind(ims));
-        this.intermediateSink = sink;
-      }
+      //console.log(process.pid, this.id, 'got intermediate');
       //console.log('SubSinkHunter still has to go,',acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[acquired+1]);
       taskRegistry.run('acquireSubSinks',{
-        debug:true,
         state:taskRegistry.run('materializeState',{
           sink: sink
         }),
@@ -71,6 +61,40 @@ function createFindSinkTask(execlib){
           cb: this.onSubSink.bind(this, acquired+1)
         }]
       });
+    }
+  };
+  SubSinkHunter.prototype.linkIntermediate = function (sink, acquired) {
+    var ims = this.intermediateSink,
+      id = this.id,
+      slen = this.task.sinkname.length,
+      isintermediate = acquired+1 !== slen,
+      indextokill,
+      currentname;
+    //console.log(process.pid, this.id, 'should linkIntermediate?', acquired, slen);
+    if (ims) {
+      indextokill = acquired-1;
+      currentname = this.task.sinkname[indextokill];
+      if(currentname.name) {
+        currentname = currentname.name;
+      }
+      /*
+      console.log(process.pid, this.id, 'linking intermediate', indextokill, 'of', slen);
+      //ims.deathLink = this.id+':'+currentname;
+      sink.destroyed.attachForSingleShot(function () {
+        console.log(id, 'destroying intermediate', currentname, indextokill, 'of', slen);
+        ims.destroy();
+      });
+      */
+      sink.destroyed.attachForSingleShot(ims.destroy.bind(ims));
+    }/* else {
+      console.log('NO');
+    }*/
+    if (isintermediate) {
+      //console.log('but setting intermediateSink');
+      this.intermediateSink = sink;
+    } else {
+      //console.log('and removing intermediateSink');
+      this.intermediateSink = null;
     }
   };
   SubSinkHunter.prototype.onSubSink = function (acquired, sink) {
@@ -229,6 +253,7 @@ function createFindSinkTask(execlib){
       //should I throw or should I no?
       return;
     }
+    //console.log(process.pid, this.task.id, 'starting acquireSink on level', this.level);
     this.acquireSinkTask = taskRegistry.run('acquireSink',prophash);
     }
     catch(e){
@@ -243,6 +268,7 @@ function createFindSinkTask(execlib){
     }
   };
   RemoteSinkHunter.prototype.reportSink = function(sinkrecord,sink){
+    try {
     this.materializeDataTask.destroy();
     this.materializeDataTask = null;
     this.datasourcesink.destroy();
@@ -250,6 +276,10 @@ function createFindSinkTask(execlib){
     this.acquireSinkTask.destroy();
     this.acquireSinkTask = null;
     this.task.reportSink(sink,this.level,sinkrecord);
+    } catch (e) {
+      console.error(e.stack);
+      console.error(e);
+    }
   };
 
   function MachineRecordSinkHunter(task,level){
@@ -306,7 +336,9 @@ function createFindSinkTask(execlib){
     };
   };
 
+  var _fstid = 0;
   function FindSinkTask(prophash){
+    //this.id = ++_fstid;
     Task.call(this,prophash);
     this.masterpid = prophash.masterpid || global.ALLEX_PROCESS_DESCRIPTOR.get('masterpid');
     if(!this.masterpid){
@@ -405,26 +437,33 @@ function createFindSinkTask(execlib){
   };
   FindSinkTask.prototype.reportSink = function(sink,level,record){
     this.log('FindSinkTask got a sink',arguments);
+    //console.log(process.pid, 'FindSinkTask', this.id, sink ? 'got' : 'got no', 'sink at level', level, record);
     if(!sink){
+      //console.log('forgetting');
       this.forgetSink(level);
       return;
     }
+    //console.log('talker', sink.clientuser.client.talker.type);
     if(this.addressinfo){
       if(this.addressinfo==='global'){
         if(level===2){
+          //console.log('accepting');
           this.acceptSink(sink,level,record);
           return;
         }
       }else{
         if(level>0){
+          //console.log('accepting');
           this.acceptSink(sink,level,record);
           return;
         }
       }
     }else{
+      //console.log('accepting');
       this.acceptSink(sink,level,record);
       return;
     }
+    //console.log('rejecting');
     sink.destroy();
   };
   FindSinkTask.prototype.acceptSink = function (sink,level,record){
@@ -437,6 +476,7 @@ function createFindSinkTask(execlib){
       return;
     }
     if (this.foundatlevel !== null && level!==this.foundatlevel) {
+      //console.log('destroying later');
       sink.destroy();
       return;
     }
