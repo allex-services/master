@@ -34,7 +34,6 @@ function createFindAndRunTask(execlib){
   }
   lib.inherit(FindAndRunTask,Task);
   FindAndRunTask.prototype.destroy = function(){
-    console.log('FindAndRunTask dying');
     if(this.findSinkTask){
       this.findSinkTask.destroy();
     }
