@@ -74,7 +74,7 @@ function createServiceUser(execlib,ParentUser){
     lib.runNext(this.killChild.bind(this, spawndescriptor.pid), 30*lib.intervals.Second);
   };
   ServiceUser.prototype.killChild = function (childpid) {
-    console.log('killing', childpid);
+    console.log('disposing of closed process', childpid);
     try {
       process.kill(childpid);
     } catch (ignore) {

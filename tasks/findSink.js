@@ -8,6 +8,39 @@ function createFindSinkTask(execlib){
       Task = execSuite.Task,
       sshid = 0;
 
+  function SinkChainListener () {
+    this.listeners = [];
+    this.sinks = [];
+  };
+  SinkChainListener.prototype.destroy = function () {
+    if (!this.listeners) {
+      return;
+    }
+    console.log('SinkChainListener dying');
+    lib.arryDestroyAll(this.listeners);
+    this.listeners = null;
+    lib.arryDestroyAll(this.sinks);
+    this.sinks = null;
+  };
+  SinkChainListener.prototype.sinkDown = function (index) {
+    console.log('SinkChainListener got sinkDown on index', index);
+    if (!this.listeners) {
+      return;
+    }
+    var l = this.listeners[index];
+    this.sinks[index] = null;
+    this.listeners[index] = null;
+    if (l) {
+      l.destroy();
+    }
+    this.destroy();
+  };
+  SinkChainListener.prototype.add = function (sink) {
+    var ind = this.listeners.length;
+    this.sinks.push(sink);
+    this.listeners.push(sink.destroyed.attach(this.sinkDown.bind(this, ind)));
+  };
+
   function SubSinkHunter(findsinktask, sink, level) {
     //this.id = ++sshid;
     if (!sink) {
@@ -15,23 +48,27 @@ function createFindSinkTask(execlib){
     }
     this.task = findsinktask;
     this.level = level;
-    this.intermediateSink = null;
+    this.chainListener = new SinkChainListener();
     this.destroyListeners = [ ];
     this.goOn(sink, 0);
   }
   SubSinkHunter.prototype.destroy = function () {
     //console.log(this.id, 'dying');
+    console.log('SubSinkHunter dying');
     var l = this.level;
     if (this.destroyListeners) {
       lib.arryDestroyAll(this.destroyListeners);
     }
     this.destroyListeners = null;
-    if (this.intermediateSink) {
-      this.intermediateSink.destroy();
+    if (this.chainListener) {
+      this.chainListener.destroy();
     }
-    this.intermediateSink = null;
+    this.chainListener = null;
     this.level = null;
     this.task = null;
+  };
+  SubSinkHunter.prototype.abort = function () {
+    this.task.forgetSink(this.level);
   };
   SubSinkHunter.prototype.goOn = function (sink, acquired) {
     acquired = acquired || 0;
@@ -42,13 +79,12 @@ function createFindSinkTask(execlib){
     if (!sink) {
       return;
     }
-    this.destroyListeners.push(sink.destroyed.attach(this.destroy.bind(this)));
-    this.linkIntermediate(sink, acquired);
+    this.destroyListeners.push(sink.destroyed.attach(this.abort.bind(this)));
+    this.chainListener.add(sink);
     if (acquired+1 === this.task.sinkname.length) {
       //console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');
       this.task.reportSink(sink, this.level);
     } else {
-      //console.log(process.pid, this.id, 'got intermediate');
       //console.log('SubSinkHunter still has to go,',acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[acquired+1]);
       taskRegistry.run('acquireSubSinks',{
         state:taskRegistry.run('materializeState',{
@@ -61,40 +97,6 @@ function createFindSinkTask(execlib){
           cb: this.onSubSink.bind(this, acquired+1)
         }]
       });
-    }
-  };
-  SubSinkHunter.prototype.linkIntermediate = function (sink, acquired) {
-    var ims = this.intermediateSink,
-      id = this.id,
-      slen = this.task.sinkname.length,
-      isintermediate = acquired+1 !== slen,
-      indextokill,
-      currentname;
-    //console.log(process.pid, this.id, 'should linkIntermediate?', acquired, slen);
-    if (ims) {
-      indextokill = acquired-1;
-      currentname = this.task.sinkname[indextokill];
-      if(currentname.name) {
-        currentname = currentname.name;
-      }
-      /*
-      console.log(process.pid, this.id, 'linking intermediate', indextokill, 'of', slen);
-      //ims.deathLink = this.id+':'+currentname;
-      sink.destroyed.attachForSingleShot(function () {
-        console.log(id, 'destroying intermediate', currentname, indextokill, 'of', slen);
-        ims.destroy();
-      });
-      */
-      sink.destroyed.attachForSingleShot(ims.destroy.bind(ims));
-    }/* else {
-      console.log('NO');
-    }*/
-    if (isintermediate) {
-      //console.log('but setting intermediateSink');
-      this.intermediateSink = sink;
-    } else {
-      //console.log('and removing intermediateSink');
-      this.intermediateSink = null;
     }
   };
   SubSinkHunter.prototype.onSubSink = function (acquired, sink) {
@@ -389,7 +391,7 @@ function createFindSinkTask(execlib){
     if(!this.onSink){
       return;
     }
-    //console.log(process.pid, 'FindSinkTask go for', this.sinkname, 'with', this.identity);
+    this.log('FindSinkTask go for', this.sinkname, 'with', this.identity);
     if (this.hunters) {
       lib.arryDestroyAll(this.hunters);
     }
@@ -436,7 +438,7 @@ function createFindSinkTask(execlib){
     }
   };
   FindSinkTask.prototype.reportSink = function(sink,level,record){
-    this.log('FindSinkTask got a sink',arguments);
+    this.log('FindSinkTask', this.sinkname, sink ? 'got' : 'lost', 'a sink at level', level, record ? 'that is '+ record.instancename : '', this.subSinkHunter ? 'with' : 'without', 'SubSinkHunter');
     //console.log(process.pid, 'FindSinkTask', this.id, sink ? 'got' : 'got no', 'sink at level', level, record);
     if(!sink){
       //console.log('forgetting');
@@ -496,7 +498,7 @@ function createFindSinkTask(execlib){
     }
   };
   FindSinkTask.prototype.forgetSink = function(level){
-    //console.log('forgetSink!', this.sinkname, 'level', level, 'foundatlevel', this.foundatlevel);
+    this.log('forgetSink!', this.sinkname, 'level', level, 'foundatlevel', this.foundatlevel);
     if(level === this.foundatlevel){
       if (this.sinkDestroyedListener) {
         this.sinkDestroyedListener.destroy();
