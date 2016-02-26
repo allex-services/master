@@ -16,14 +16,12 @@ function createFindSinkTask(execlib){
     if (!this.listeners) {
       return;
     }
-    console.log('SinkChainListener dying');
     lib.arryDestroyAll(this.listeners);
     this.listeners = null;
     lib.arryDestroyAll(this.sinks);
     this.sinks = null;
   };
   SinkChainListener.prototype.sinkDown = function (index) {
-    console.log('SinkChainListener got sinkDown on index', index);
     if (!this.listeners) {
       return;
     }
@@ -54,7 +52,6 @@ function createFindSinkTask(execlib){
   }
   SubSinkHunter.prototype.destroy = function () {
     //console.log(this.id, 'dying');
-    console.log('SubSinkHunter dying');
     var l = this.level;
     if (this.destroyListeners) {
       lib.arryDestroyAll(this.destroyListeners);
