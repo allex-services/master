@@ -127,7 +127,10 @@ function start(mastersink){
       propertyhash:APD.get('prophash')
     },
     ports:ports
-  });
+  }).done(
+    null,
+    process.exit.bind(process, 1)
+  );
   /*.done(
     //startProcessStats
     //contactMachineManager,
