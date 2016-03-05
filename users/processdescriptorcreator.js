@@ -16,6 +16,7 @@ function createProcessDescriptor(execlib){
       this.mastersink = null;
     }catch (e) {
       console.log ('Unable to create process descriptor due to ',e.message, e.stack);
+      console.log (props);
       process.exit();
     }
   };

@@ -15,9 +15,9 @@ function createServiceUser(execlib,ParentUser){
   ParentUser.inherit(ServiceUser,require('../methoddescriptors/serviceuser'),[],require('../visiblefields/serviceuser'));
   ServiceUser.prototype.onReadyForSpawn = function(spawndescriptor,defer){
     spawndescriptor.masterpid = process.pid;
-    var envj = JSON.stringify({
+    var envj = encodeURIComponent(JSON.stringify({
       ALLEX_SPAWN:spawndescriptor
-    }),
+    })),
       forkstring = 'fork://'+__dirname+'/spawn.js?env='+envj;
     if(spawndescriptor.debug){
       forkstring += ('&debug='+spawndescriptor.debug);
