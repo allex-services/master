@@ -1,13 +1,14 @@
 function createClientSide(execlib,ParentServicePack) {
   'use strict';
+  var sinkhunters = require('./tasks/sinkhunterscreator')(execlib);
   return {
     SinkMap: require('./sinkmapcreator')(execlib,ParentServicePack),
     Tasks: [{
       name: 'findSink',
-      klass: require('./tasks/findSink')(execlib)
+      klass: require('./tasks/findSink')(execlib, sinkhunters)
     },{
       name: 'findSinksByModuleName',
-      klass: require('./tasks/findSinksByModule')(execlib)
+      klass: require('./tasks/findSinksByModuleName')(execlib, sinkhunters)
     },{
       name: 'findAndRun',
       klass: require('./tasks/findAndRun')(execlib)
