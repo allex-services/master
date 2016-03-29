@@ -245,6 +245,7 @@ function createSinkHunters(execlib) {
     if(!prophash){
       return;
     }
+    prophash.singleshot = true;
     prophash.onSink = this.reportSink.bind(this,sinkrecord);
     if(this.acquireSinkTask){
       //should I throw or should I no?
@@ -294,8 +295,7 @@ function createSinkHunters(execlib) {
     }
     return {
       connectionString: 'socket:///tmp/allexprocess.'+sinkrecord.pid,
-      identity: {samemachineprocess:smi},
-      singleshot: true
+      identity: {samemachineprocess:smi}
     };
   };
 
@@ -330,8 +330,7 @@ function createSinkHunters(execlib) {
     //console.log(connectionString, '=> OUTGOING IDENT ', identity, 'because', myidentity, '(', this.task.identity, ')');
     return {
       connectionString: connectionString,
-      identity: identity,
-      singleshot: true
+      identity: identity
     };
   };
 

@@ -21,7 +21,9 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
   }
   lib.inherit(MultiLanSinkHunter, sinkhunters.LanSinkHunter);
   MultiLanSinkHunter.prototype.destroy = function () {
-    lib.arryDestroyAll(this.acquireSinkTasks);
+    if (this.acquireSinkTasks) {
+      lib.arryDestroyAll(this.acquireSinkTasks);
+    }
     this.acquireSinkTasks = null;
     sinkhunters.LanSinkHunter.prototype.destroy.call(this);
   };
@@ -34,12 +36,6 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     this.acquireSinkTasks.push(this.acquireSinkTask);
     this.acquireSinkTask = null;
   };
-  MultiLanSinkHunter.prototype.createAcquireSinkPropHash = function (sinkrecord) {
-    var ret = sinkhunters.LanSinkHunter.prototype.createAcquireSinkPropHash.call(this, sinkrecord);
-    ret.singleshot = false;
-    return ret;
-  };
-
 
   function FindSinksByModuleNameTask(prophash) {
     Task.call(this, prophash);
@@ -67,10 +63,6 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     }
     this.hunter = new MultiLanSinkHunter(this,0);
     this.hunter.go();
-  };
-  FindSinksByModuleNameTask.prototype.getSinkName = function () {
-    console.trace();
-    console.log('STA KOJ MOJ getSinkName?');
   };
   FindSinksByModuleNameTask.prototype.getIdentity = function () {
     return this.identity;
