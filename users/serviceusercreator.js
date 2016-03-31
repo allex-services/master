@@ -37,6 +37,40 @@ function createServiceUser(execlib,ParentUser){
     },d.reject.bind(d));
     return d.promise;
   };
+  function portsucceeder(port, defer, result) {
+    if (result === true) {
+      defer.resolve(port);
+    } else {
+      console.log('port', port, 'is currently taken, will retry in 1 second');
+      lib.runNext(portchecker.bind(null, port, defer), lib.intervals.Second);
+    }
+  }
+  function portfailer(port, defer, error) {
+    console.error('port', port, 'check failed', error, 'will retry in 1 second');
+    lib.runNext(portchecker.bind(null, port, defer), lib.intervals.Second);
+  }
+  function portchecker (port, defer) {
+    try {
+    execlib.execSuite.checkPort(port).then(
+      portsucceeder.bind(null, port, defer),
+      portfailer.bind(null, port, defer)
+    );
+    } catch(e) {
+      console.error(e.stack);
+      console.error(e);
+      defer.reject(e);
+    }
+  }
+  ServiceUser.prototype.portPromise = function (spawnrecord, porttype) {
+    var port = (spawnrecord) ? spawnrecord[porttype+'port'] : 0, d;
+    if (lib.isNumber(port) && port > 0) {
+      d = q.defer();
+      portchecker(port, d);
+      return d.promise;
+    } else {
+      return this.getPort(porttype, spawnrecord);
+    }
+  };
   ServiceUser.prototype.acquireSink = function(spawnrecord, spawndescriptor, defer){
     var modulename = spawnrecord.modulename,
         name = spawnrecord.instancename;
@@ -51,9 +85,7 @@ function createServiceUser(execlib,ParentUser){
       return;
     }
     //console.log('spawnrecord:',spawnrecord);
-    q.allSettled([this.getPort('tcp',spawnrecord),
-      this.getPort('http',spawnrecord),
-      this.getPort('ws',spawnrecord)]).done(
+    q.allSettled(['tcp', 'http', 'ws'].map(this.portPromise.bind(this, spawnrecord))).done(
       this.onReadyForSpawn.bind(this,spawnrecord,defer),
       defer.reject.bind(defer)
     );
