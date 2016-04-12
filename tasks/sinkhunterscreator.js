@@ -175,7 +175,7 @@ function createSinkHunters(execlib) {
     SinkHunter.call(this,task,level);
     this.baseAcquireSinkTask = null;
     this.datasourcesink = null;
-    this.materializeDataTask = null;
+    this.materializeQueryTask = null;
     this.acquireSinkTask = null;
   }
   lib.inherit(RemoteSinkHunter,SinkHunter);
@@ -184,10 +184,10 @@ function createSinkHunters(execlib) {
       this.acquireSinkTask.destroy();
     }
     this.acquireSinkTask = null;
-    if(this.materializeDataTask){
-      this.materializeDataTask.destroy();
+    if(this.materializeQueryTask){
+      this.materializeQueryTask.destroy();
     }
-    this.materializeDataTask = null;
+    this.materializeQueryTask = null;
     if(this.datasourcesink){
       //console.log(process.pid, 'destroying datasourcesink');
       this.datasourcesink.destroy();
@@ -209,8 +209,7 @@ function createSinkHunters(execlib) {
       identity:{
         samemachineprocess:{
           pid: process.pid,
-          role: 'service',
-          filter: this.getAcquireSinkFilter()
+          role: 'service'
         }
       },
       onSink: this.onDataSourceSink.bind(this),
@@ -226,17 +225,19 @@ function createSinkHunters(execlib) {
   RemoteSinkHunter.prototype.onDataSourceSink = function(datasourcesink){
     this.datasourcesink = datasourcesink;
     if(datasourcesink){
-      this.materializeDataTask = taskRegistry.run('materializeData',{
+      this.materializeQueryTask = taskRegistry.run('materializeQuery',{
         sink: datasourcesink,
+        continuous: true,
+        filter: this.getAcquireSinkFilter(),
         data: [],
         onRecordCreation: this.onSinkRecordFound.bind(this),
         onRecordDeletion: this.onSinkRecordDeleted.bind(this)
       });
     }else{
-      if(this.materializeDataTask){
-        this.materializeDataTask.destroy();
+      if(this.materializeQueryTask){
+        this.materializeQueryTask.destroy();
       }
-      this.materializeDataTask = null;
+      this.materializeQueryTask = null;
     }
   };
   RemoteSinkHunter.prototype.onSinkRecordFound = function(sinkrecord){
@@ -267,8 +268,8 @@ function createSinkHunters(execlib) {
   };
   RemoteSinkHunter.prototype.reportSink = function(sinkrecord,sink){
     try {
-    this.materializeDataTask.destroy();
-    this.materializeDataTask = null;
+    this.materializeQueryTask.destroy();
+    this.materializeQueryTask = null;
     this.datasourcesink.destroy();
     this.datasourcesink = null;
     this.acquireSinkTask.destroy();

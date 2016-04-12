@@ -1,17 +1,4 @@
 var _taskName2moduleName = {};
-/*
-  materializeState: '.',
-  transmitTcp: '.',
-  materializeData: 'allex_dataservice',
-  forwardData: 'allex_dataservice',
-  monitorSubservices: 'allex_servicecontainerservice',
-  fetchOrCreateWithData: 'allex_directoryservice',
-  transmitFile: 'allex_directoryservice',
-  downloadFile: 'allex_directoryservice',
-  registerUpload: 'allex_cgiservice',
-  registerDownload: 'allex_cgiservice'
-};
-*/
 function createFindAndRunTask(execlib){
   'use strict';
   var lib = execlib.lib,
