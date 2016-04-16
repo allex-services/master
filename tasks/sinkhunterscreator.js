@@ -71,6 +71,7 @@ function createSinkHunters(execlib) {
     acquired = acquired || 0;
     var foundit, ims;
     if (!this.task) {
+      this.destroy();
       return;
     }
     if (!sink) {
@@ -82,19 +83,30 @@ function createSinkHunters(execlib) {
       //console.log('SubSinkHunter got it!,',acquired+1,'===', this.task.sinkname.length, this.task.getSinkName(acquired), 'will call onSink with', sink ? 'sink' :  'no sink');
       this.task.reportSink(sink, this.level);
     } else {
-      //console.log('SubSinkHunter still has to go,',acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[acquired+1]);
-      taskRegistry.run('acquireSubSinks',{
-        state:taskRegistry.run('materializeState',{
-          sink: sink
-        }),
-        subinits:[{
-          name: this.task.getSinkName(acquired+1),
-          identity: this.task.getIdentity(acquired+1),
-          propertyhash: this.task.getPropertyHash(acquired+1),
-          cb: this.onSubSink.bind(this, acquired+1)
-        }]
-      });
+      if (this.task.isDirect(acquired+1)) {
+        sink.subConnect(this.task.getSinkName(acquired+1), this.task.getIdentity(acquired+1)).then(
+          this.onSubSink.bind(this, acquired+1),
+          this.onNoDirectSubSink.bind(this, sink, acquired)
+        );
+      } else {
+        //console.log('SubSinkHunter still has to go,',acquired+1,'<', this.task.sinkname.length, 'will call acquireSubSinks for', this.task.sinkname[acquired+1]);
+        taskRegistry.run('acquireSubSinks',{
+          state:taskRegistry.run('materializeState',{
+            sink: sink
+          }),
+          subinits:[{
+            name: this.task.getSinkName(acquired+1),
+            identity: this.task.getIdentity(acquired+1),
+            propertyhash: this.task.getPropertyHash(acquired+1),
+            cb: this.onSubSink.bind(this, acquired+1)
+          }]
+        });
+      }
     }
+  };
+  SubSinkHunter.prototype.onNoDirectSubSink = function (sink, acquired, error) {
+    console.error('direct subConnect error', error);
+    lib.runNext(this.goOn.bind(this, sink, acquired), lib.intervals.Second);
   };
   SubSinkHunter.prototype.onSubSink = function (acquired, sink) {
     //console.log('SubSinkHunter got subsink');
@@ -204,17 +216,26 @@ function createSinkHunters(execlib) {
     if(this.baseAcquireSinkTask){
       return;
     }
-    this.baseAcquireSinkTask = taskRegistry.run('acquireSink',{
-      connectionString:'socket:///tmp/'+this.dataSourceSinkName()+'.'+this.task.masterpid,
-      identity:{
-        samemachineprocess:{
-          pid: process.pid,
-          role: 'service'
-        }
-      },
-      onSink: this.onDataSourceSink.bind(this),
-      singleshot: true
-    });
+    if (this.task.isDirect()) {
+      this.baseAcquireSinkTask = taskRegistry.run('acquireSink', {
+        connectionString: this.task.getSinkName(),
+        identity: this.task.getIdentity(),
+        onSink: this.reportSink.bind(this),
+        singleshot: true
+      });
+    } else {
+      this.baseAcquireSinkTask = taskRegistry.run('acquireSink',{
+        connectionString:'socket:///tmp/'+this.dataSourceSinkName()+'.'+this.task.masterpid,
+        identity:{
+          samemachineprocess:{
+            pid: process.pid,
+            role: 'service'
+          }
+        },
+        onSink: this.onDataSourceSink.bind(this),
+        singleshot: true
+      });
+    }
   };
   RemoteSinkHunter.prototype.getAcquireSinkFilter = function () {
     throw new lib.Error('NOT_IMPLEMENTED','Basic RemoteSinkHunter does not implement getAcquireSinkFilter');

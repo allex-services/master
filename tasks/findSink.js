@@ -125,6 +125,17 @@ function createFindSinkTask(execlib, sinkhunters){
       return this.prophash;
     }
   };
+  FindSinkTask.prototype.isDirect = function (index) {
+    var si;
+    if (lib.isArray(this.sinkname)) {
+      si = this.sinkname[index||0];
+      if (!si) {
+        return false;
+      }
+      return si.direct;
+    }
+    return false;
+  };
   FindSinkTask.prototype.reportSink = function(sink,level,record){
     this.log('FindSinkTask', this.sinkname, sink ? 'got' : 'lost', 'a sink at level', level, record ? 'that is '+ record.instancename : '', this.subSinkHunter ? 'with' : 'without', 'SubSinkHunter');
     //console.log(process.pid, 'FindSinkTask', this.id, sink ? 'got' : 'got no', 'sink at level', level, record);

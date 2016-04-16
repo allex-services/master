@@ -67,6 +67,9 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
   FindSinksByModuleNameTask.prototype.getIdentity = function () {
     return this.identity;
   };
+  FindSinksByModuleNameTask.prototype.isDirect = function () {
+    return false;
+  };
   FindSinksByModuleNameTask.prototype.reportSink = function (sink, level, record) {
     if (this.onSink) {
       this.onSink(sink, record);

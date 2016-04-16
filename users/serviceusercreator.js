@@ -84,7 +84,7 @@ function createServiceUser(execlib,ParentUser){
       defer.reject(e);
       return;
     }
-    //console.log('spawnrecord:',spawnrecord);
+    //console.log('spawnrecord:',spawnrecord, 'going to check for ports');
     q.allSettled(['tcp', 'http', 'ws'].map(this.portPromise.bind(this, spawnrecord))).done(
       this.onReadyForSpawn.bind(this,spawnrecord,defer),
       defer.reject.bind(defer)
