@@ -17,7 +17,7 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
 
   function MultiLanSinkHunter (task, level) {
     sinkhunters.LanSinkHunter.call(this, task, level);
-    this.acquireSinkTasks = [];
+    this.acquireSinkTasks = new lib.Map();
   }
   lib.inherit(MultiLanSinkHunter, sinkhunters.LanSinkHunter);
   MultiLanSinkHunter.prototype.destroy = function () {
@@ -28,12 +28,24 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     sinkhunters.LanSinkHunter.prototype.destroy.call(this);
   };
   MultiLanSinkHunter.prototype.getAcquireSinkFilter = getAcquireSinkFilter;
+  MultiLanSinkHunter.prototype.createAcquireSinkPropHash = function (sinkrecord) {
+    var ret = sinkhunters.LanSinkHunter.prototype.createAcquireSinkPropHash.call(this, sinkrecord);
+    ret.singleshot = false;
+    return ret;
+  };
   MultiLanSinkHunter.prototype.reportSink = function (sinkrecord, sink) {
+    var ast;
+    if (!sink) {
+      ast = this.acquireSinkTasks.remove(sinkrecord.instancename);
+      if (ast) {
+        ast.destroy();
+      }
+    }
     this.task.reportSink(sink, this.level, sinkrecord);
   };
   MultiLanSinkHunter.prototype.onSinkRecordFound = function (sinkrecord) {
     sinkhunters.LanSinkHunter.prototype.onSinkRecordFound.call(this, sinkrecord);
-    this.acquireSinkTasks.push(this.acquireSinkTask);
+    this.acquireSinkTasks.add(sinkrecord.instancename, this.acquireSinkTask);
     this.acquireSinkTask = null;
   };
 

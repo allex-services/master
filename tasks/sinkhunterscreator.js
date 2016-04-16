@@ -267,7 +267,9 @@ function createSinkHunters(execlib) {
     if(!prophash){
       return;
     }
-    prophash.singleshot = true;
+    if (!('singleshot' in prophash)) {
+      prophash.singleshot = true;
+    }
     prophash.onSink = this.reportSink.bind(this,sinkrecord);
     if(this.acquireSinkTask){
       //should I throw or should I no?
