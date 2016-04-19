@@ -43,12 +43,7 @@ function createNatThisTask(execlib) {
       identity: {
         samemachineprocess: {
           pid: process.pid,
-          role: 'user',
-          filter: {
-            op: 'natlookup',
-            iaddress: this.iaddress,
-            iport: this.iport
-          }
+          role: 'user'
         }
       },
       onSink: this.onNatSink.bind(this)
@@ -59,6 +54,7 @@ function createNatThisTask(execlib) {
     if (sink) {
       taskRegistry.run('natLookup',{
         sink: sink,
+        iaddress: this.iaddress,
         iport: this.iport,
         cb: this.onNatLookup.bind(this)
       });
