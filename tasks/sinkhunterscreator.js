@@ -217,25 +217,43 @@ function createSinkHunters(execlib) {
       return;
     }
     if (this.task.isDirect()) {
-      this.baseAcquireSinkTask = taskRegistry.run('acquireSink', {
-        connectionString: this.task.getSinkName(),
-        identity: this.task.getIdentity(),
-        onSink: this.reportSink.bind(this),
-        singleshot: true
-      });
+      this.baseAcquireSinkTask = taskRegistry.run('acquireSink', this.createDirectBaseAcquireSinkTaskPropertyHash());
     } else {
-      this.baseAcquireSinkTask = taskRegistry.run('acquireSink',{
-        connectionString:'socket:///tmp/'+this.dataSourceSinkName()+'.'+this.task.masterpid,
-        identity:{
-          samemachineprocess:{
-            pid: process.pid,
-            role: 'service'
-          }
-        },
-        onSink: this.onDataSourceSink.bind(this),
-        singleshot: true
-      });
+      this.baseAcquireSinkTask = taskRegistry.run('acquireSink',this.createNonDirectBaseAcquireSinkTaskPropertyHash());
     }
+  };
+  RemoteSinkHunter.prototype.createDirectBaseAcquireSinkTaskPropertyHash = function () {
+    return {
+      connectionString: this.task.getSinkName(),
+      identity: this.task.getIdentity(),
+      onSink: this.reportSink.bind(this),
+      onCannotConnect: this.onNoBaseSink.bind(this),
+      singleshot: true
+    };
+  };
+  RemoteSinkHunter.prototype.createNonDirectBaseAcquireSinkTaskPropertyHash = function () {
+    return {
+      connectionString:'socket:///tmp/'+this.dataSourceSinkName()+'.'+this.task.masterpid,
+      identity:{
+        samemachineprocess:{
+          pid: process.pid,
+          role: 'service'
+        }
+      },
+      onSink: this.onDataSourceSink.bind(this),
+      onCannotConnect: this.onNoBaseSink.bind(this),
+      singleshot: true
+    };
+  };
+  RemoteSinkHunter.prototype.onNoBaseSink = function () {
+    if (!this.task) {
+      return;
+    }
+    if(this.baseAcquireSinkTask) {
+      this.baseAcquireSinkTask.destroy();
+    }
+    this.baseAcquireSinkTask = null;
+    lib.runNext(this.go.bind(this), lib.intervals.Second);
   };
   RemoteSinkHunter.prototype.getAcquireSinkFilter = function () {
     throw new lib.Error('NOT_IMPLEMENTED','Basic RemoteSinkHunter does not implement getAcquireSinkFilter');
