@@ -105,7 +105,6 @@ function createSinkHunters(execlib) {
     }
   };
   SubSinkHunter.prototype.onNoDirectSubSink = function (sink, acquired, error) {
-    console.error('direct subConnect error', error);
     lib.runNext(this.goOn.bind(this, sink, acquired), lib.intervals.Second);
   };
   SubSinkHunter.prototype.onSubSink = function (acquired, sink) {

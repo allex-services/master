@@ -19,24 +19,21 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
   function MultiLanSinkHunter (task, level) {
     LanSinkHunter.call(this, task, level);
     this.acquireSinkTasks = new lib.Map();
+    this.sinkDestroyListeners = new lib.Map();
   }
   lib.inherit(MultiLanSinkHunter, LanSinkHunter);
   MultiLanSinkHunter.prototype.destroy = function () {
+    if (this.sinkDestroyListeners) {
+      lib.containerDestroyAll(this.sinkDestroyListeners);
+      this.sinkDestroyListeners.destroy();
+    }
+    this.sinkDestroyListeners = null;
     if (this.acquireSinkTasks) {
-      lib.arryDestroyAll(this.acquireSinkTasks);
+      lib.containerDestroyAll(this.acquireSinkTasks);
+      this.acquireSinkTasks.destroy();
     }
     this.acquireSinkTasks = null;
     LanSinkHunter.prototype.destroy.call(this);
-  };
-  MultiLanSinkHunter.prototype.createDirectBaseAcquireSinkTaskPropertyHash = function () {
-    var ret = LanSinkHunter.prototype.createDirectBaseAcquireSinkTaskPropertyHash.call(this);
-    ret.singleshot = false;
-    return ret;
-  };
-  MultiLanSinkHunter.prototype.createNonDirectBaseAcquireSinkTaskPropertyHash = function () {
-    var ret = LanSinkHunter.prototype.createNonDirectBaseAcquireSinkTaskPropertyHash.call(this);
-    ret.singleshot = false;
-    return ret;
   };
   MultiLanSinkHunter.prototype.getAcquireSinkFilter = getAcquireSinkFilter;
   MultiLanSinkHunter.prototype.createAcquireSinkPropHash = function (sinkrecord) {
@@ -46,10 +43,20 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
   };
   MultiLanSinkHunter.prototype.reportSink = function (sinkrecord, sink) {
     //this.purgeSingleAcquireSinkTask(sinkrecord.instancename);
+    if (sink) {
+      this.sinkDestroyListeners.add(sinkrecord.instancename, sink.destroyed.attach(this.onSingleSinkDown.bind(this, sinkrecord)));
+    } else {
+      var l = this.sinkDestroyListeners.remove(sinkrecord.instancename);
+      if (l) {
+        l.destroy();
+      }
+    }
     this.task.reportSink(sink, this.level, sinkrecord);
   };
+  MultiLanSinkHunter.prototype.onSingleSinkDown = function (sinkrecord) {
+    this.reportSink(sinkrecord, null);
+  };
   MultiLanSinkHunter.prototype.onSinkRecordFound = function (sinkrecord) {
-    console.log('onSinkRecordFound', sinkrecord.instancename);
     LanSinkHunter.prototype.onSinkRecordFound.call(this, sinkrecord);
     if (!this.acquireSinkTasks.get(sinkrecord.instancename)) {
       this.acquireSinkTasks.add(sinkrecord.instancename, this.acquireSinkTask);
