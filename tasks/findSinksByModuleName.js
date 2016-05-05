@@ -5,6 +5,7 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     q = lib.q,
     qlib = lib.qlib,
     execSuite = execlib.execSuite,
+    taskRegistry = execSuite.taskRegistry,
     Task = execSuite.Task,
     LanSinkHunter = sinkhunters.LanSinkHunter;
 
@@ -16,23 +17,93 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     };
   };
 
+  function ServiceRecordManager(sinkcb) {
+    this.sinkcb = sinkcb;
+    this.servicerecord = null;
+    this.taskpropertyhash = null;
+    this.task = null;
+    this.sink = null;
+    this.sinkDestroyedListener = null;
+  }
+  ServiceRecordManager.prototype.destroy = function () {
+    if (this.sinkDestroyedListener) {
+      this.sinkDestroyedListener.destroy();
+    }
+    this.sinkDestroyedListener = null;
+    this.sink = null;
+    this.purgeTask();
+    this.taskpropertyhash = null;
+    this.servicerecord = null;
+    this.sinkcb = null;
+  };
+  ServiceRecordManager.prototype.purgeTask = function () {
+    if (this.task) {
+      this.task.destroy();
+    }
+    this.task = null;
+  };
+  ServiceRecordManager.prototype.onServiceRecord = function (servicerecord, taskpropertyhash) {
+    this.servicerecord = servicerecord;
+    this.taskpropertyhash = taskpropertyhash;
+    this.taskpropertyhash.singleshot = true;
+    this.taskpropertyhash.onSink = this.onSink.bind(this);
+    this.taskpropertyhash.onCannotConnect = this.onCannotConnect.bind(this);
+    this.onServiceRecordTaskHandler();
+  };
+  ServiceRecordManager.prototype.stopTask = function () {
+    this.taskpropertyhash = null;
+    this.purgeTask();
+    if (!this.sink) {
+      this.destroy();
+    }
+  };
+  ServiceRecordManager.prototype.onServiceRecordTaskHandler = function () {
+    this.purgeTask();
+    if (!this.sink) {
+      if (!this.taskpropertyhash) {
+        this.destroy();
+      } else {
+        this.task = taskRegistry.run('acquireSink', this.taskpropertyhash);
+      }
+    }
+  };
+  ServiceRecordManager.prototype.onSink = function (sink) {
+    if (this.sink) {
+      throw new lib.Error('DUPLICATE_SINK');
+    }
+    if (sink) {
+      if (this.sinkDestroyedListener) {
+        throw new lib.Error('DUPLICATE_SINK_DESTROYED_LISTENER');
+      }
+      this.task = null;
+      this.sinkDestroyedListener = sink.destroyed.attach(this.onSinkDown.bind(this));
+      this.sink = sink;
+      this.sinkcb(this.servicerecord, sink);
+    } else {
+      this.sinkDestroyedListener.destroy();
+      this.sink = sink;
+      this.sinkcb(this.servicerecord, sink);
+      this.onServiceRecordTaskHandler();
+    }
+  };
+  ServiceRecordManager.prototype.onCannotConnect = function () {
+    this.onServiceRecordTaskHandler();
+  };
+  ServiceRecordManager.prototype.onSinkDown = function () {
+    this.onSink(null);
+  };
+
   function MultiLanSinkHunter (task, level) {
     LanSinkHunter.call(this, task, level);
-    this.acquireSinkTasks = new lib.Map();
-    this.sinkDestroyListeners = new lib.Map();
+    this.sinkRecordManagers = new lib.Map();
   }
   lib.inherit(MultiLanSinkHunter, LanSinkHunter);
   MultiLanSinkHunter.prototype.destroy = function () {
-    if (this.sinkDestroyListeners) {
-      lib.containerDestroyAll(this.sinkDestroyListeners);
-      this.sinkDestroyListeners.destroy();
+    if (this.sinkRecordManagers) {
+      lib.containerDestroyAll(this.sinkRecordManagers);
+      this.sinkRecordManagers.destroy();
     }
-    this.sinkDestroyListeners = null;
-    if (this.acquireSinkTasks) {
-      lib.containerDestroyAll(this.acquireSinkTasks);
-      this.acquireSinkTasks.destroy();
-    }
-    this.acquireSinkTasks = null;
+    this.sinkRecordManagers = null;
     LanSinkHunter.prototype.destroy.call(this);
   };
   MultiLanSinkHunter.prototype.getAcquireSinkFilter = getAcquireSinkFilter;
@@ -42,38 +113,28 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     return ret;
   };
   MultiLanSinkHunter.prototype.reportSink = function (sinkrecord, sink) {
-    //this.purgeSingleAcquireSinkTask(sinkrecord.instancename);
-    if (sink) {
-      this.sinkDestroyListeners.add(sinkrecord.instancename, sink.destroyed.attach(this.onSingleSinkDown.bind(this, sinkrecord)));
-    } else {
-      var l = this.sinkDestroyListeners.remove(sinkrecord.instancename);
-      if (l) {
-        l.destroy();
-      }
-    }
     this.task.reportSink(sink, this.level, sinkrecord);
   };
-  MultiLanSinkHunter.prototype.onSingleSinkDown = function (sinkrecord) {
-    this.reportSink(sinkrecord, null);
-  };
   MultiLanSinkHunter.prototype.onSinkRecordFound = function (sinkrecord) {
-    LanSinkHunter.prototype.onSinkRecordFound.call(this, sinkrecord);
-    if (!this.acquireSinkTasks.get(sinkrecord.instancename)) {
-      this.acquireSinkTasks.add(sinkrecord.instancename, this.acquireSinkTask);
-    } else {
-      console.log('but already have', sinkrecord.instancename, '?!');
+    var instancename = sinkrecord.instancename, 
+      srm = this.sinkRecordManagers.get(instancename);
+
+    if (!srm) {
+      srm = new ServiceRecordManager(this.reportSink.bind(this));
+      this.sinkRecordManagers.add(instancename, srm);
     }
-    this.acquireSinkTask = null;
+    srm.onServiceRecord(sinkrecord, this.createAcquireSinkPropHash(sinkrecord));
+
   };
   MultiLanSinkHunter.prototype.onSinkRecordDeleted = function (sinkrecord) {
-    this.purgeSingleAcquireSinkTask(sinkrecord.instancename);
-  };
-  MultiLanSinkHunter.prototype.purgeSingleAcquireSinkTask = function (sinktaskname) {
-    console.log('purgeSingleAcquireSinkTask', sinktaskname);
-    var ast = this.acquireSinkTasks.remove(sinktaskname);
-    if (ast) {
-      ast.destroy();
+    var instancename = sinkrecord.instancename, 
+      srm = this.sinkRecordManagers.get(instancename);
+
+    if (!srm) {
+      srm = new ServiceRecordManager(this.reportSink.bind(this));
+      this.sinkRecordManagers.add(instancename, srm);
     }
+    srm.stopTask();
   };
 
   function FindSinksByModuleNameTask(prophash) {
