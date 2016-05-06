@@ -17,8 +17,9 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     };
   };
 
-  function ServiceRecordManager(sinkcb) {
+  function ServiceRecordManager(sinkcb, destroycb) {
     this.sinkcb = sinkcb;
+    this.destroycb = destroycb;
     this.servicerecord = null;
     this.taskpropertyhash = null;
     this.task = null;
@@ -26,6 +27,9 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     this.sinkDestroyedListener = null;
   }
   ServiceRecordManager.prototype.destroy = function () {
+    if (this.destroycb) {
+      this.destroycb(this.servicerecord.instancename);
+    }
     if (this.sinkDestroyedListener) {
       this.sinkDestroyedListener.destroy();
     }
@@ -34,6 +38,7 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     this.purgeTask();
     this.taskpropertyhash = null;
     this.servicerecord = null;
+    this.destroycb = null;
     this.sinkcb = null;
   };
   ServiceRecordManager.prototype.purgeTask = function () {
@@ -68,10 +73,13 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
     }
   };
   ServiceRecordManager.prototype.onSink = function (sink) {
-    if (this.sink) {
-      throw new lib.Error('DUPLICATE_SINK');
+    if (!this.sinkcb) {
+      return;
     }
     if (sink) {
+      if (this.sink) {
+        throw new lib.Error('DUPLICATE_SINK');
+      }
       if (this.sinkDestroyedListener) {
         throw new lib.Error('DUPLICATE_SINK_DESTROYED_LISTENER');
       }
@@ -81,6 +89,7 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
       this.sinkcb(this.servicerecord, sink);
     } else {
       this.sinkDestroyedListener.destroy();
+      this.sinkDestroyedListener = null;
       this.sink = sink;
       this.sinkcb(this.servicerecord, sink);
       this.onServiceRecordTaskHandler();
@@ -120,7 +129,7 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
       srm = this.sinkRecordManagers.get(instancename);
 
     if (!srm) {
-      srm = new ServiceRecordManager(this.reportSink.bind(this));
+      srm = new ServiceRecordManager(this.reportSink.bind(this), this.onServiceRecordManagerDown.bind(this));
       this.sinkRecordManagers.add(instancename, srm);
     }
     srm.onServiceRecord(sinkrecord, this.createAcquireSinkPropHash(sinkrecord));
@@ -135,6 +144,9 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
       this.sinkRecordManagers.add(instancename, srm);
     }
     srm.stopTask();
+  };
+  MultiLanSinkHunter.prototype.onServiceRecordManagerDown = function (instancename) {
+    this.sinkRecordManagers.remove(instancename);
   };
 
   function FindSinksByModuleNameTask(prophash) {
