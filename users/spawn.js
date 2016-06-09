@@ -17,6 +17,7 @@ process.on ('uncaughtException', function (reason) {
 var toolbox = require('allex-rt-toolbox'),
     execlib = require('allex'),
     lib = execlib.lib,
+    qlib = lib.qlib,
     execSuite = execlib.execSuite,
     ProcessDescriptor = require('./processdescriptorcreator')(execlib),
     taskRegistry = execSuite.taskRegistry;
@@ -147,11 +148,7 @@ function tryStart(should){
     process.exit(1);
     return;
   }
-  if(!lib.uidReady()){
-    lib.runNext(tryStart.bind(null,true),100);
-    return;
-  }
-  contactMachineManager();
+  lib.initUid().then(qlib.executor(contactMachineManager));
 }
 
 var _allServices = [];
