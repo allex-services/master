@@ -141,7 +141,7 @@ function start(mastersink){
   );*/
 }
 
-toolbox.allex.config.init(3,tryStart,true); //true => skip updating
+//toolbox.allex.config.init(3,tryStart,true); //true => skip updating
 
 function tryStart(should){
   if(!should){
@@ -151,6 +151,7 @@ function tryStart(should){
   }
   lib.initUid().then(qlib.executor(contactMachineManager));
 }
+tryStart(true);
 
 var _allServices = [];
 
