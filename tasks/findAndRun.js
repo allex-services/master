@@ -67,7 +67,7 @@ function createFindAndRunTask(execlib){
     }
   };
   FindAndRunTask.prototype.prepareToIgnite = function (tph) {
-    registry.register(tph.sink.modulename).then(this.onRemoteService.bind(this,tph));
+    registry.registerClientSide(tph.sink.modulename).then(this.onRemoteService.bind(this,tph));
     /*
     var modulename = _taskName2moduleName[this.program.task.name];
     if (!modulename) {
