@@ -75,8 +75,9 @@ function createServiceUser(execlib,ParentUser){
     var modulename = spawnrecord.modulename,
         name = spawnrecord.instancename;
     //console.log('should spawn',modulename,'as',name,'from',__dirname,spawnrecord);
+    /*
     try{
-      registry.register(modulename);
+      registry.registerServerSide(modulename);
     }
     catch(e){
       console.error('Error in registering',modulename);
@@ -84,6 +85,7 @@ function createServiceUser(execlib,ParentUser){
       defer.reject(e);
       return;
     }
+    */
     //console.log('spawnrecord:',spawnrecord, 'going to check for ports');
     q.allSettled(['tcp', 'http', 'ws'].map(this.portPromise.bind(this, spawnrecord))).done(
       this.onReadyForSpawn.bind(this,spawnrecord,defer),

@@ -41,7 +41,8 @@ execSuite.firstFreePortStartingWith = toolbox.allex.portSuite.reserve;
 execSuite.isPortFree = toolbox.allex.portSuite.check;
 
 toolbox.unixsocketcleaner('/tmp/allexprocess.'+process.pid);
-execSuite.registry.register('allex_masterservice'); //to get the 'findSink' task registered
+execSuite.registry.registerClientSide('.'); //to get the 'findSink' task registered
+execSuite.registry.registerClientSide('allex_masterservice'); //to get the 'findSink' task registered
 
 var spawndescriptorjson = process.argv[2] || process.env['ALLEX_SPAWN'];
 var APD = new ProcessDescriptor(spawndescriptorjson);

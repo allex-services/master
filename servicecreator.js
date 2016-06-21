@@ -1,7 +1,6 @@
-function createMasterService(execlib,ParentServicePack){
+function createMasterService(execlib,ParentService){
   'use strict';
-  var ParentService = ParentServicePack.Service,
-    execSuite = execlib.execSuite,
+  var execSuite = execlib.execSuite,
     dataSuite = execlib.dataSuite,
     NullStorage = dataSuite.NullStorage,
     lib = execlib.lib,

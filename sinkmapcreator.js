@@ -1,5 +1,5 @@
-function sinkMapCreator(execlib,ParentServicePack){
-  var sinkmap = new (execlib.lib.Map), ParentSinkMap = ParentServicePack.SinkMap;
+function sinkMapCreator(execlib,ParentSinkMap){
+  var sinkmap = new (execlib.lib.Map);
   sinkmap.add('service',require('./sinks/servicesinkcreator')(execlib,ParentSinkMap.get('service')));
   
   return sinkmap;
