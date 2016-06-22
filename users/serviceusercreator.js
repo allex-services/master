@@ -13,7 +13,7 @@ function createServiceUser(execlib,ParentUser){
     ParentUser.call(this,prophash);
   }
   ParentUser.inherit(ServiceUser,require('../methoddescriptors/serviceuser'),[],require('../visiblefields/serviceuser'));
-  ServiceUser.prototype.onReadyForSpawn = function(spawndescriptor){
+  ServiceUser.prototype.onReadyForSpawn = function(spawndescriptor,defer){
     spawndescriptor.masterpid = process.pid;
     var envj = encodeURIComponent(JSON.stringify({
       ALLEX_SPAWN:spawndescriptor
@@ -24,8 +24,9 @@ function createServiceUser(execlib,ParentUser){
     }else if(spawndescriptor.debug_brk){
       forkstring += ('&debug_brk='+spawndescriptor.debug_brk);
     }
-    return registry.spawn({},forkstring,{}).then(
-      this._onSpawned.bind(this,spawndescriptor)
+    registry.spawn({},forkstring,{}).done(
+      this._onSpawned.bind(this,defer,spawndescriptor),
+      this._onSpawnFailed.bind(this,defer)
     );
   };
   ServiceUser.prototype.getPort = function(portdomain,spawndescriptor){
@@ -70,11 +71,11 @@ function createServiceUser(execlib,ParentUser){
       return this.getPort(porttype, spawnrecord);
     }
   };
-  ServiceUser.prototype.acquireSink = function(spawnrecord, spawndescriptor){
-    /*
+  ServiceUser.prototype.acquireSink = function(spawnrecord, spawndescriptor, defer){
     var modulename = spawnrecord.modulename,
         name = spawnrecord.instancename;
     //console.log('should spawn',modulename,'as',name,'from',__dirname,spawnrecord);
+    /*
     try{
       registry.registerServerSide(modulename);
     }
@@ -86,15 +87,19 @@ function createServiceUser(execlib,ParentUser){
     }
     */
     //console.log('spawnrecord:',spawnrecord, 'going to check for ports');
-    return q.allSettled(['tcp', 'http', 'ws'].map(this.portPromise.bind(this, spawnrecord))).then(
-      this.onReadyForSpawn.bind(this,spawnrecord),
-      console.error.bind(console, 'master spawn oooops')
+    q.allSettled(['tcp', 'http', 'ws'].map(this.portPromise.bind(this, spawnrecord))).done(
+      this.onReadyForSpawn.bind(this,spawnrecord,defer),
+      defer.reject.bind(defer)
     );
   };
-  ServiceUser.prototype._onSpawned = function(spawndescriptor,sink){
+  ServiceUser.prototype._onSpawned = function(defer,spawndescriptor,sink){
     spawndescriptor.pid = sink.clientuser.client.talker.proc.pid;
+    defer.resolve(sink);
     sink.extendTo(sink.destroyed.attach(this._onSinkDown.bind(this,spawndescriptor)));
-    return q(sink);
+  };
+  ServiceUser.prototype._onSpawnFailed = function(defer,reason){
+    console.log('NOT spawned',arguments);
+    defer.reject(reason);
   };
   ServiceUser.prototype._onSinkDown = function(spawndescriptor){
     this.__service.tcpports.reclaim(spawndescriptor.tcpport);
