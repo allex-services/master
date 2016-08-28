@@ -40,7 +40,10 @@ function createServiceUser(execlib,ParentUser){
     if (result === true) {
       defer.resolve(port);
     } else {
-      console.log('port', port, 'is currently taken, will retry in 1 second');
+      port ++;
+      if (port%1000 === 0) {
+        port -= 1000;
+      }
       lib.runNext(portchecker.bind(null, port, defer), lib.intervals.Second);
     }
   }
