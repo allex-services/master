@@ -1,15 +1,11 @@
 #!/usr/bin/env node
 process.on ('uncaughtException', function (reason) {
-  var e = new String(reason.toString());
-  if(reason.code){
-    e.code = reason.code;
-  }
   if(reason.code !== 'MODULE_NOT_FOUND'){
     console.log('uncaughtException in allex child process',process.pid);
     console.error(reason.stack);
-    console.error(e);
+    console.error(reason);
   }else{
-    process.send({uncaughtException:e});
+    process.send({uncaughtException:{code: reason.code, message: reason.message}});
   }
 });
 
