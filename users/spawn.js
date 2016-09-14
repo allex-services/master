@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+var Path = require('path');
 process.on ('uncaughtException', function (reason) {
   if(reason.code !== 'MODULE_NOT_FOUND'){
     console.log('uncaughtException in allex child process',process.pid);
@@ -36,7 +37,7 @@ execSuite.installFromError = toolbox.allex.commands.install;
 execSuite.firstFreePortStartingWith = toolbox.allex.portSuite.reserve;
 execSuite.isPortFree = toolbox.allex.portSuite.check;
 
-toolbox.unixsocketcleaner('/tmp/allexprocess.'+process.pid);
+toolbox.unixsocketcleaner(Path.join(execSuite.tmpPipeDir(), 'allexprocess.'+process.pid));
 execSuite.registry.registerClientSide('.'); //to get the 'findSink' task registered
 execSuite.registry.registerClientSide('allex_masterservice'); //to get the 'findSink' task registered
 
@@ -53,7 +54,7 @@ var ports = [{
   protocol: {
     name: 'socket'
   },
-  port: '/tmp/allexprocess.'+process.pid,
+  port: Path.join(execSuite.tmpPipeDir(), 'allexprocess.'+process.pid),
   strategies: {samemachineprocess:true}
 }];
 
@@ -87,12 +88,16 @@ if(APD.get('wsport')){
 
 //console.log('spawning',APD);
 
+function loadBaseService(){
+  execlib.loadDependencies('server',['.'], contactMachineManager);
+}
+
 function contactMachineManager(){
-  var mmp = 'socket:///tmp/allexmachinemanager';
+  var mmp = 'socket://'+execSuite.tmpPipeDir()+'/allexmachinemanager';
   if(APD.get('masterpid')){
     mmp += ('.'+APD.get('masterpid'));
   }
-  //console.log(mmp);
+  console.log(mmp);
   taskRegistry.run('acquireSink',{
     identity:{samemachineprocess:{pid:process.pid,role:'service'}},
     connectionString: mmp,
@@ -145,7 +150,7 @@ function tryStart(should){
     process.exit(1);
     return;
   }
-  lib.initUid().then(qlib.executor(contactMachineManager));
+  lib.initUid().then(qlib.executor(loadBaseService));
 }
 tryStart(true);
 

@@ -232,7 +232,7 @@ function createSinkHunters(execlib) {
   };
   RemoteSinkHunter.prototype.createNonDirectBaseAcquireSinkTaskPropertyHash = function () {
     return {
-      connectionString:'socket:///tmp/'+this.dataSourceSinkName()+'.'+this.task.masterpid,
+      connectionString:'socket://'+execSuite.tmpPipeDir()+'/'+this.dataSourceSinkName()+'.'+this.task.masterpid,
       identity:{
         samemachineprocess:{
           pid: process.pid,
@@ -335,7 +335,7 @@ function createSinkHunters(execlib) {
       smi[i] = idnt[i];
     }
     return {
-      connectionString: 'socket:///tmp/allexprocess.'+sinkrecord.pid,
+      connectionString: 'socket://'+execSuite.tmpPipeDir()+'/allexprocess.'+sinkrecord.pid,
       identity: {samemachineprocess:smi}
     };
   };
