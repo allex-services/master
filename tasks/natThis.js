@@ -39,7 +39,7 @@ function createNatThisTask(execlib) {
       return;
     }
     this.acquireNatSinkTask = taskRegistry.run('acquireSink', {
-      connectionString: 'socket:///tmp/nat.'+global.ALLEX_PROCESS_DESCRIPTOR.masterpid,
+      connectionString: 'socket://'+execSuite.tmpPipeDir()+'/nat.'+global.ALLEX_PROCESS_DESCRIPTOR.masterpid,
       identity: {
         samemachineprocess: {
           pid: process.pid,
