@@ -1,4 +1,3 @@
-var _taskName2moduleName = {};
 function createFindAndRunTask(execlib){
   'use strict';
   var lib = execlib.lib,
@@ -42,40 +41,41 @@ function createFindAndRunTask(execlib){
     });
   };
   FindAndRunTask.prototype.onSink = function(sink){
-    try{
-      if(!sink){
-        if('function' !== typeof this.program.task.name || !this.program.continuous){
-          lib.runNext(this.destroy.bind(this));
-          return;
+    var taskisfunc;
+    if (!this.program) {
+      return;
+    }
+    taskisfunc = lib.isFunction(this.program.task.name);
+    if(!sink){
+      if(!taskisfunc || !this.program.continuous){
+        if(taskisfunc) {
+          this.program.task.name(this.makeTaskPropertyHash(sink));
         }
-      }
-      var tph = this.program.task.propertyhash || {};
-      tph.sink = sink;
-      tph.taskRegistry = taskRegistry;
-      tph.execlib = execlib;
-      lib.traverse(tph,this.fillAsNeeded.bind(this,tph));
-      this.log('going for',this.program.task.name);
-      if('function' === typeof this.program.task.name){
-        this.program.task.name(tph);
-      }else{
-        this.prepareToIgnite(tph);
+        lib.runNext(this.destroy.bind(this));
+        return;
       }
     }
-    catch(e){
-      console.log(e.stack);
-      console.log(e);
+    this.log('going for',this.program.task.name);
+    if(taskisfunc) {
+      this.program.task.name(this.makeTaskPropertyHash(sink));
+    }else{
+      this.prepareToIgnite(this.makeTaskPropertyHash(sink));
     }
+  };
+  FindAndRunTask.prototype.makeTaskPropertyHash = function (sink) {
+    var tph;
+    if (!this.program) {
+      return {};
+    }
+    tph = this.program.task.propertyhash || {};
+    tph.sink = sink;
+    tph.taskRegistry = taskRegistry;
+    tph.execlib = execlib;
+    lib.traverse(tph,this.fillAsNeeded.bind(this,tph));
+    return tph;
   };
   FindAndRunTask.prototype.prepareToIgnite = function (tph) {
     registry.registerClientSide(tph.sink.modulename).then(this.onRemoteService.bind(this,tph));
-    /*
-    var modulename = _taskName2moduleName[this.program.task.name];
-    if (!modulename) {
-      throw lib.Error('PROGRAM_TASK_NAME_NOT_REGISTERED','Software vendor needs to update the lookup table for Task named '+this.program.task.name);
-    }
-    registry.register(modulename).done(this.onModuleReadyForIgnite.bind(this,tph));
-    this.log('registered',modulename,'to ignite',this.program.task.name);
-    */
   };
   FindAndRunTask.prototype.onRemoteService = function (tph, remoteservice) {
     var pn = this.program.task.name,
@@ -85,17 +85,6 @@ function createFindAndRunTask(execlib){
     }
     try{
       taskRegistry.run(pn,tph);
-    } catch (e) {
-      console.error('on servicepack', servicepack);
-      console.error(e.stack);
-      console.error(e);
-    }
-  };
-  FindAndRunTask.prototype.onModuleReadyForIgnite = function (tph, servicepack) {
-    this.log(registry.get('allex_cgiservice'));
-    this.log('igniting',this.program.task.name,'with',tph);
-    try{
-      taskRegistry.run(this.program.task.name,tph);
     } catch (e) {
       console.error('on servicepack', servicepack);
       console.error(e.stack);
