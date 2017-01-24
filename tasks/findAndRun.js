@@ -86,7 +86,6 @@ function createFindAndRunTask(execlib){
     try{
       taskRegistry.run(pn,tph);
     } catch (e) {
-      console.error('on servicepack', servicepack);
       console.error(e.stack);
       console.error(e);
     }
