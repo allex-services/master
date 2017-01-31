@@ -23,6 +23,8 @@ function createServiceUser(execlib,ParentUser){
       forkstring += ('&debug='+spawndescriptor.debug);
     }else if(spawndescriptor.debug_brk){
       forkstring += ('&debug_brk='+spawndescriptor.debug_brk);
+    }else if(spawndescriptor.prof){
+      forkstring += '&prof=true';
     }
     return registry.spawn({},forkstring,{}).then(
       this._onSpawned.bind(this,spawndescriptor)

@@ -25,6 +25,8 @@ module.exports = {
       name: 'debug' //for testing only!
     },{
       name: 'debug_brk'
+    },{
+      name: 'prof'
     }]
   }
 };
