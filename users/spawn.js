@@ -42,6 +42,7 @@ execSuite.registry.registerClientSide('.'); //to get the 'findSink' task registe
 execSuite.registry.registerClientSide('allex_masterservice'); //to get the 'findSink' task registered
 
 var spawndescriptorjson = process.argv[2] || process.env['ALLEX_SPAWN'];
+var runtimedirectory = process.argv[3] || process.env['ALLEX_RUNTIMEDIRECTORY'];
 var APD = new ProcessDescriptor(spawndescriptorjson);
 global.ALLEX_PROCESS_DESCRIPTOR = APD;
 
@@ -97,7 +98,7 @@ function contactMachineManager(){
   if(APD.get('masterpid')){
     mmp += ('.'+APD.get('masterpid'));
   }
-  console.log(mmp);
+  //console.log(mmp);
   taskRegistry.run('acquireSink',{
     identity:{samemachineprocess:{pid:process.pid,role:'service'}},
     connectionString: mmp,
@@ -121,6 +122,9 @@ function start(mastersink){
     //master is dead, so... die...
     process.exit(0);
     return;
+  }
+  if (runtimedirectory) {
+    process.chdir(runtimedirectory);
   }
   execSuite.onNewServicePack = onNewServicePack.bind(null,mastersink);
   execSuite.start({

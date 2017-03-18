@@ -16,7 +16,8 @@ function createServiceUser(execlib,ParentUser){
   ServiceUser.prototype.onReadyForSpawn = function(spawndescriptor){
     spawndescriptor.masterpid = process.pid;
     var envj = encodeURIComponent(JSON.stringify({
-      ALLEX_SPAWN:spawndescriptor
+      ALLEX_SPAWN:spawndescriptor,
+      ALLEX_RUNTIMEDIRECTORY:this.__service.runTimeDir
     })),
       forkstring = 'fork://'+__dirname+'/spawn.js?env='+envj;
     if(spawndescriptor.debug){

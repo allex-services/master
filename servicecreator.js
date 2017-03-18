@@ -27,6 +27,7 @@ function createMasterService(execlib,ParentService){
 
   function MasterService(prophash){
     ParentService.call(this,prophash);
+    this.runTimeDir = prophash.runtimedirectory;
     this.tcpports = new UsedPorts(prophash.portrangestart.tcp || 15000);
     this.httpports = new UsedPorts(prophash.portrangestart.http || 16000);
     this.wsports = new UsedPorts(prophash.portrangestart.ws || 17000);
@@ -45,6 +46,7 @@ function createMasterService(execlib,ParentService){
     this.httpports = null;
     this.wsports.destroy();
     this.wsports = null;
+    this.runTimeDir = null;
     ParentService.prototype.__cleanUp.call(this);
   };
   MasterService.prototype.createStorage = function(storagedescriptor){
