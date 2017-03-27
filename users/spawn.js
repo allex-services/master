@@ -124,7 +124,13 @@ function start(mastersink){
     return;
   }
   if (runtimedirectory) {
-    process.chdir(runtimedirectory);
+    try {
+      process.chdir(runtimedirectory);
+    }
+    catch (e) {
+      console.error('Could not chdir to designated run-time directory', runtimedirectory);
+      process.exit(1);
+    }
   }
   execSuite.onNewServicePack = onNewServicePack.bind(null,mastersink);
   execSuite.start({
