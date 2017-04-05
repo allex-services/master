@@ -27,6 +27,8 @@ console.log = function(){
 };
 */
 
+execlib.serverLoggingSetup();
+
 var pe = process.exit;
 process.exit = function(code) {
   console.trace();
