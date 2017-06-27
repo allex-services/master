@@ -11,12 +11,12 @@ process.on ('uncaughtException', function (reason) {
 });
 
 'use strict';
-var toolbox = require('allex-rt-toolbox'),
-    execlib = require('allex'),
+var execlib = require('allex'),
     lib = execlib.lib,
     qlib = lib.qlib,
     execSuite = execlib.execSuite,
     ProcessDescriptor = require('./processdescriptorcreator')(execlib),
+    unixsocketcleaner = require('allex_unixsocketcleanerserverruntimelib'),
     taskRegistry = execSuite.taskRegistry;
 
 /*
@@ -35,11 +35,7 @@ process.exit = function(code) {
   pe.apply(process, arguments);
 }
 
-execSuite.installFromError = toolbox.allex.commands.install;
-execSuite.firstFreePortStartingWith = toolbox.allex.portSuite.reserve;
-execSuite.isPortFree = toolbox.allex.portSuite.check;
-
-toolbox.unixsocketcleaner(Path.join(execSuite.tmpPipeDir(), 'allexprocess.'+process.pid));
+unixsocketcleaner(Path.join(execSuite.tmpPipeDir(), 'allexprocess.'+process.pid));
 execSuite.registry.registerClientSide('.'); //to get the 'findSink' task registered
 execSuite.registry.registerClientSide('allex_masterservice'); //to get the 'findSink' task registered
 
@@ -153,8 +149,6 @@ function start(mastersink){
     null
   );*/
 }
-
-//toolbox.allex.config.init(3,tryStart,true); //true => skip updating
 
 function tryStart(should){
   if(!should){
