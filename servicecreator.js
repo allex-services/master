@@ -32,6 +32,7 @@ function createMasterService(execlib,ParentService){
     this.httpports = new UsedPorts(prophash.portrangestart.http || 16000);
     this.wsports = new UsedPorts(prophash.portrangestart.ws || 17000);
     this.lanManagerAvailable = prophash.lanManagerAvailable.attach(this.onLanManager.bind(this));
+    lib.moduleRecognition({takeauxfrompath: this.runTimeDir});
   }
   ParentService.inherit(MasterService,factoryCreator,require('./storagedescriptor'));
   MasterService.prototype.__cleanUp = function(){

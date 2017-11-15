@@ -42,6 +42,7 @@ execSuite.registry.registerClientSide('allex_masterservice'); //to get the 'find
 var spawndescriptorjson = process.argv[2] || process.env['ALLEX_SPAWN'];
 var runtimedirectory = process.argv[3] || process.env['ALLEX_RUNTIMEDIRECTORY'];
 var APD = new ProcessDescriptor(spawndescriptorjson);
+lib.moduleRecognition({takeauxfrompath: runtimedirectory});
 global.ALLEX_PROCESS_DESCRIPTOR = APD;
 
 if(!APD.get('wsport')){
