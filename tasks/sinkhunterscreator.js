@@ -262,6 +262,10 @@ function createSinkHunters(execlib) {
   };
   RemoteSinkHunter.prototype.onDataSourceSink = function(datasourcesink){
     this.datasourcesink = datasourcesink;
+    if(this.materializeQueryTask){
+      this.materializeQueryTask.destroy();
+    }
+    this.materializeQueryTask = null;
     if(datasourcesink){
       this.materializeQueryTask = taskRegistry.run('materializeQuery',{
         sink: datasourcesink,
@@ -271,11 +275,6 @@ function createSinkHunters(execlib) {
         onRecordCreation: this.onSinkRecordFound.bind(this),
         onRecordDeletion: this.onSinkRecordDeleted.bind(this)
       });
-    }else{
-      if(this.materializeQueryTask){
-        this.materializeQueryTask.destroy();
-      }
-      this.materializeQueryTask = null;
     }
   };
   RemoteSinkHunter.prototype.onSinkRecordFound = function(sinkrecord){
@@ -348,21 +347,23 @@ function createSinkHunters(execlib) {
     return 'availablelanservices';
   };
   LanSinkHunter.prototype.createAcquireSinkPropHash = function(sinkrecord){
-    var connectionString;
+    var connectionString, strategiesimplemented, identity, _id, myidentity;
     if(sinkrecord.wsport){
       connectionString = 'ws://'+sinkrecord.ipaddress+':'+sinkrecord.wsport;
-    }else{
     }
     if(!connectionString){
       console.error('Could not make the connectionString out of lansinkrecord',sinkrecord);
       return null;
     }
-    var strategiesimplemented = Object.keys(sinkrecord.strategies), myidentity = this.task.getIdentity(), identity;
+    strategiesimplemented = Object.keys(sinkrecord.strategies);
+    myidentity = this.task.getIdentity();
     if(strategiesimplemented.length){
       identity = {};
+      _id = identity;
       strategiesimplemented.forEach(function(strat){
-        identity[strat] = myidentity;
+        _id[strat] = myidentity;
       });
+      _id = null;
     }else{
       identity = {
         ip: myidentity
