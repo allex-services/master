@@ -1,6 +1,6 @@
 {
   "name": "allex_masterservice",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "MasterService",
   "main": "index.js",
   "scripts": {
