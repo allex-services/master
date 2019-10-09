@@ -38,15 +38,8 @@ function createNatThisTask(execlib) {
     if (this.acquireNatSinkTask) {
       return;
     }
-    this.acquireNatSinkTask = taskRegistry.run('acquireSink', {
-      connectionString: 'socket://'+execSuite.tmpPipeDir()+'/nat.'+global.ALLEX_PROCESS_DESCRIPTOR.masterpid,
-      identity: {
-        samemachineprocess: {
-          pid: process.pid,
-          role: 'user'
-        }
-      },
-      onSink: this.onNatSink.bind(this)
+    this.acquireNatSinkTask = taskRegistry.run('findNatSink', {
+      cb: this.onNatSink.bind(this)
     });
   };
   NatThisTask.prototype.onNatSink = function (sink) {
@@ -61,11 +54,10 @@ function createNatThisTask(execlib) {
     }
   };
   NatThisTask.prototype.onNatLookup = function (address, port) {
-    console.log('nat', this.iaddress+':'+this.iport, '=>', address+':'+port);
-    if(!this.cb){
-      return;
+    //console.log('nat', this.iaddress+':'+this.iport, '=>', address+':'+port);
+    if(this.cb){
+      this.cb(address, port);
     }
-    this.cb(address, port);
     if (this.singleshot) {
       this.destroy();
     }

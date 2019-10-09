@@ -176,6 +176,12 @@ function createSinkHunters(execlib) {
     this.handleSuperSink();
   };
   RegistrySinkHunter.prototype.reportSink = function (sink) {
+    if (!this.task) {
+      if (sink) {
+        sink.destroy();
+      }
+      return;
+    }
     this.task.reportSink(sink,this.level);
   };
   RegistrySinkHunter.prototype.onFail = function(){
@@ -306,18 +312,25 @@ function createSinkHunters(execlib) {
     }
   };
   RemoteSinkHunter.prototype.reportSink = function(sinkrecord,sink){
-    try {
-    this.materializeQueryTask.destroy();
-    this.materializeQueryTask = null;
-    this.datasourcesink.destroy();
-    this.datasourcesink = null;
-    this.acquireSinkTask.destroy();
-    this.acquireSinkTask = null;
-    this.task.reportSink(sink,this.level,sinkrecord);
-    } catch (e) {
-      console.error(e.stack);
-      console.error(e);
+    if (this.materializeQueryTask) {
+      this.materializeQueryTask.destroy();
     }
+    this.materializeQueryTask = null;
+    if (this.datasourcesink) {
+      this.datasourcesink.destroy();
+    }
+    this.datasourcesink = null;
+    if (this.acquireSinkTask) {
+      this.acquireSinkTask.destroy();
+    }
+    this.acquireSinkTask = null;
+    if (!this.task) {
+      if (sink) {
+        sink.destroy();
+      }
+      return;
+    }
+    this.task.reportSink(sink,this.level,sinkrecord);
   };
 
   function MachineRecordSinkHunter(task,level){
@@ -347,7 +360,7 @@ function createSinkHunters(execlib) {
     return 'availablelanservices';
   };
   LanSinkHunter.prototype.createAcquireSinkPropHash = function(sinkrecord){
-    var connectionString, strategiesimplemented, identity, _id, myidentity;
+    var connectionString, strategiesimplemented, identity, _id, myidentity, _myid;
     if(sinkrecord.wsport){
       connectionString = 'ws://'+sinkrecord.ipaddress+':'+sinkrecord.wsport;
     }
@@ -360,9 +373,11 @@ function createSinkHunters(execlib) {
     if(strategiesimplemented.length){
       identity = {};
       _id = identity;
+      _myid = myidentity;
       strategiesimplemented.forEach(function(strat){
-        _id[strat] = myidentity;
+        _id[strat] = _myid;
       });
+      _myid = null;
       _id = null;
     }else{
       identity = {

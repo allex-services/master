@@ -43,6 +43,9 @@ function createFindAndRunTask(execlib){
   FindAndRunTask.prototype.onSink = function(sink){
     var taskisfunc;
     if (!this.program) {
+      if (sink) {
+        sink.destroy();
+      }
       return;
     }
     taskisfunc = lib.isFunction(this.program.task.name);

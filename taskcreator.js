@@ -32,6 +32,9 @@ function createTasks(execlib) {
     name: 'findAndRun',
     klass: require('./tasks/findAndRun')(execlib)
   },{
+    name: 'findNatSink',
+    klass: require('./tasks/findNatSink')(execlib)
+  },{
     name: 'natThis',
     klass: require('./tasks/natThis')(execlib)
   },{

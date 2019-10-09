@@ -32,7 +32,7 @@ function createFindSinkTask(execlib, sinkhunters){
     Task.call(this,prophash);
     this.masterpid = prophash.masterpid || global.ALLEX_PROCESS_DESCRIPTOR.get('masterpid');
     if(!this.masterpid){
-      throw new lib.Error('NO_MASTER_PID','Property hash for FindSinkTask misses the masterpid property');
+      throw new lib.Error('NO_MASTER_PID', 'No "masterpid" property in property hash for FindSinkTask');
     }
     this.sinkname = prophash.sinkname;
     this.identity = prophash.identity;
@@ -93,14 +93,15 @@ function createFindSinkTask(execlib, sinkhunters){
     });
   };
   FindSinkTask.prototype.getSinkName = function (index) {
+    index = index||0;
     if (lib.isArray(this.sinkname)) {
-      var s = this.sinkname[index||0];
+      var s = this.sinkname[index];
       if (!s) {
         console.log('What the #! is in this.sinkname?', this.sinkname, 'for index', index);
         this.destroy();
         return null;
       }
-      return this.sinkname[index||0].name || this.sinkname[index||0];
+      return this.sinkname[index].name || this.sinkname[index];
     }
     return this.sinkname;
   };
@@ -110,25 +111,27 @@ function createFindSinkTask(execlib, sinkhunters){
       if (index===this.sinkname.length-1) {
         return this.identity;
       }
-      return this.sinkname[index||0].identity || {};
+      return this.sinkname[index].identity || {};
     } else {
       return this.identity;
     }
   };
   FindSinkTask.prototype.getPropertyHash = function (index) {
+    index = index || 0;
     if (lib.isArray(this.sinkname)) {
       if (index===this.sinkname.length-1) {
         return this.prophash;
       }
-      return this.sinkname[index||0].propertyhash || {};
+      return this.sinkname[index].propertyhash || {};
     } else {
       return this.prophash;
     }
   };
   FindSinkTask.prototype.isDirect = function (index) {
     var si;
+    index = index || 0;
     if (lib.isArray(this.sinkname)) {
-      si = this.sinkname[index||0];
+      si = this.sinkname[index];
       if (!si) {
         return false;
       }
