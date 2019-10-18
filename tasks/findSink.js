@@ -4,8 +4,7 @@ function createFindSinkTask(execlib, sinkhunters){
       q = lib.q,
       execSuite = execlib.execSuite,
       taskRegistry = execSuite.taskRegistry,
-      Task = execSuite.Task,
-      _fstid = 0;
+      Task = execSuite.Task;
 
   function getAcquireSinkFilter() {
     return {
@@ -27,8 +26,13 @@ function createFindSinkTask(execlib, sinkhunters){
   lib.inherit(SingleLanSinkHunter, sinkhunters.LanSinkHunter);
   SingleLanSinkHunter.prototype.getAcquireSinkFilter = getAcquireSinkFilter;
 
+  function NullSinkHunter () {
+  }
+  NullSinkHunter.prototype.destroy = lib.dummyFunc;
+  NullSinkHunter.prototype.go = lib.dummyFunc;
+
+
   function FindSinkTask(prophash){
-    //this.id = ++_fstid;
     Task.call(this,prophash);
     this.masterpid = prophash.masterpid || global.ALLEX_PROCESS_DESCRIPTOR.get('masterpid');
     if(!this.masterpid){
@@ -48,10 +52,6 @@ function createFindSinkTask(execlib, sinkhunters){
   }
   lib.inherit(FindSinkTask,Task);
   FindSinkTask.prototype.destroy = function(){
-    /*
-    console.trace();
-    console.log('FindSinkTask', this.sinkname, 'destroying');
-    */
     if (this.subSinkHunter) {
       this.subSinkHunter.destroy();
     }
@@ -84,8 +84,8 @@ function createFindSinkTask(execlib, sinkhunters){
       lib.arryDestroyAll(this.hunters);
     }
     this.hunters = [
-      new sinkhunters.RegistrySinkHunter(this,0),
-      new SingleMachineRecordSinkHunter(this,1),
+      new (this.addressinfo==='global' ? NullSinkHunter : sinkhunters.RegistrySinkHunter)(this,0),
+      new (this.addressinfo==='global' ? NullSinkHunter : SingleMachineRecordSinkHunter)(this,1),
       new SingleLanSinkHunter(this,2)
     ];
     this.hunters.forEach(function(h){
@@ -167,7 +167,7 @@ function createFindSinkTask(execlib, sinkhunters){
       this.acceptSink(sink,level,record);
       return;
     }
-    //console.log('rejecting');
+    //console.log('FindSinkTask with addressinfo', this.addressinfo, 'will reject the sink at level', level);
     sink.destroy();
   };
   FindSinkTask.prototype.acceptSink = function (sink,level,record){
@@ -194,7 +194,9 @@ function createFindSinkTask(execlib, sinkhunters){
       lib.arryDestroyAll(this.hunters);
       this.hunters = null;
       //console.log('acceptSink', level);
-      this.sinkDestroyedListener = sink.destroyed.attach(this.forgetSink.bind(this,level));
+      if (sink.destroyed) {
+        this.sinkDestroyedListener = sink.destroyed.attach(this.forgetSink.bind(this,level));
+      }
       this.sink = sink;
       this.callbackTheSink(sink);
     }

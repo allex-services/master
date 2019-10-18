@@ -5,8 +5,8 @@ function createSinkHunters(execlib) {
       q = lib.q,
       execSuite = execlib.execSuite,
       registry = execSuite.registry,
-      taskRegistry = execSuite.taskRegistry,
-      sshid = 0;
+      taskRegistry = execSuite.taskRegistry;
+
 
   function SinkChainListener () {
     this.listeners = [];
@@ -39,8 +39,8 @@ function createSinkHunters(execlib) {
     this.listeners.push(sink.destroyed.attach(this.sinkDown.bind(this, ind)));
   };
 
+
   function SubSinkHunter(findsinktask, sink, level) {
-    //this.id = ++sshid;
     if (!sink) {
       console.error('SubSinkHunter cannot start on a null sink');
     }
@@ -51,7 +51,6 @@ function createSinkHunters(execlib) {
     this.goOn(sink, 0);
   }
   SubSinkHunter.prototype.destroy = function () {
-    //console.log(this.id, 'dying');
     var l = this.level;
     if (this.destroyListeners) {
       lib.arryDestroyAll(this.destroyListeners);
@@ -111,6 +110,7 @@ function createSinkHunters(execlib) {
     //console.log('SubSinkHunter got subsink');
     this.goOn(sink, acquired);
   };
+
 
   function SinkHunter(task,level){
     this.task = task;
