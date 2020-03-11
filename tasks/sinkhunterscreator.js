@@ -218,6 +218,9 @@ function createSinkHunters(execlib) {
     SinkHunter.prototype.destroy.call(this);
   };
   RemoteSinkHunter.prototype.go = function(){
+    if (!this.task) { //I'm dead
+      return;
+    }
     if(this.baseAcquireSinkTask){
       return;
     }
