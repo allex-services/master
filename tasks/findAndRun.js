@@ -113,7 +113,7 @@ function createFindAndRunTask(execlib){
     lib.traverse(programtask.propertyhash,this.checkForFillYourself.bind(this));
   };
   var _propsForNeed = {
-      wsport: true
+      httpport: true
     },
     _propsForGlobalNeed = {
       ipaddress: true

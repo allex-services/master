@@ -364,7 +364,9 @@ function createSinkHunters(execlib) {
   };
   LanSinkHunter.prototype.createAcquireSinkPropHash = function(sinkrecord){
     var connectionString, strategiesimplemented, identity, _id, myidentity, _myid;
-    if(sinkrecord.wsport){
+    if (sinkrecord.httpport){
+      connectionString = 'http://'+sinkrecord.ipaddress+':'+sinkrecord.httpport;
+    } else if(sinkrecord.wsport){
       connectionString = 'ws://'+sinkrecord.ipaddress+':'+sinkrecord.wsport;
     }
     if(!connectionString){
