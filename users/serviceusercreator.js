@@ -14,22 +14,7 @@ function createServiceUser(execlib,ParentUser){
   }
   ParentUser.inherit(ServiceUser,require('../methoddescriptors/serviceuser'),[],require('../visiblefields/serviceuser'));
   ServiceUser.prototype.onReadyForSpawn = function(spawndescriptor){
-    spawndescriptor.masterpid = process.pid;
-    var envj = encodeURIComponent(JSON.stringify({
-      ALLEX_SPAWN:spawndescriptor,
-      ALLEX_RUNTIMEDIRECTORY:this.__service.runTimeDir
-    })),
-      forkstring = 'fork://'+__dirname+'/spawn.js?env='+envj;
-    if(spawndescriptor.debug){
-      forkstring += ('&debug='+spawndescriptor.debug);
-    }else if(spawndescriptor.debug_brk){
-      forkstring += ('&debug_brk='+spawndescriptor.debug_brk);
-    }else if(spawndescriptor.prof){
-      forkstring += '&prof=true';
-    }
-    return registry.spawn({},forkstring,{}).then(
-      this._onSpawned.bind(this,spawndescriptor)
-    );
+    return this.procCreator(spawndescriptor);
   };
   ServiceUser.prototype.getPort = function(portdomain,spawndescriptor){
     var d = q.defer();
@@ -127,6 +112,53 @@ function createServiceUser(execlib,ParentUser){
   ServiceUser.prototype.removeNeed = function (instancename, defer) {
     qlib.promise2defer(this.__service.removeNeed(instancename), defer);
   };
+
+  ServiceUser.prototype.procCreator = function (spawndescriptor) {
+    spawndescriptor.masterpid = process.pid;
+    if (spawndescriptor &&
+      spawndescriptor.modulename &&
+      spawndescriptor.modulename.indexOf(':')>0){
+        return this.procSpawner(spawndescriptor)
+      }
+    return this.procForker(spawndescriptor);
+  }
+  ServiceUser.prototype.procForker = function (spawndescriptor, forkstring) {
+    var envj = encodeURIComponent(JSON.stringify({
+      ALLEX_SPAWN:spawndescriptor,
+      ALLEX_RUNTIMEDIRECTORY:this.__service.runTimeDir
+    })),
+      forkstring = 'fork://'+__dirname+'/spawn.js?env='+envj;
+    if(spawndescriptor.debug){
+      forkstring += ('&debug='+spawndescriptor.debug);
+    }else if(spawndescriptor.debug_brk){
+      forkstring += ('&debug_brk='+spawndescriptor.debug_brk);
+    }else if(spawndescriptor.prof){
+      forkstring += '&prof=true';
+    }
+    return registry.spawn({},forkstring,{}).then(
+      this._onSpawned.bind(this,spawndescriptor)
+    );
+  }
+
+  ServiceUser.prototype.procSpawner = function (spawndescriptor) {
+    var domainandmodulename = spawndescriptor.modulename.split(':');
+    if (domainandmodulename.length != 2) {
+      return q.reject(new lib.Error('INVALID_DOMAIN_AND_MODULENAME', spawndescriptor.modulename+' has to be formed as "domain:modulename"'));
+    }
+    var domain = domainandmodulename[0];
+    if (domain != 'dotnet'){
+      return q.reject(new lib.Error('UNSUPPORTED_DOMAIN', domain+' has to be "dotnet", the only one supported for now'));
+    }
+    spawndescriptor.modulename = domainandmodulename[1];
+    var envj = encodeURIComponent(JSON.stringify({
+      ALLEX_SPAWN:spawndescriptor,
+      ALLEX_RUNTIMEDIRECTORY:this.__service.runTimeDir
+    })),
+      spawnstring = 'spawn://AllexJSDotNet?env='+envj;
+    return registry.spawn({},spawnstring,{}).then(
+      this._onSpawned.bind(this,spawndescriptor)
+    );
+  }
 
   return ServiceUser;
 }
