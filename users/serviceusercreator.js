@@ -61,7 +61,6 @@ function createServiceUser(execlib,ParentUser){
       portfailer.bind(null, port, defer)
     );
     } catch(e) {
-      console.error(e.stack);
       console.error(e);
       defer.reject(e);
     }
@@ -94,7 +93,10 @@ function createServiceUser(execlib,ParentUser){
     //console.log('spawnrecord:',spawnrecord, 'going to check for ports');
     return q.allSettled(['tcp', 'http', 'ws'].map(this.portPromise.bind(this, spawnrecord))).then(
       this.onReadyForSpawn.bind(this,spawnrecord),
-      console.error.bind(console, 'master spawn oooops')
+      function (err) {
+        console.error('master spawn oooops', err);
+        throw err;
+      }
     );
   };
   ServiceUser.prototype._onSpawned = function(spawndescriptor,sink){

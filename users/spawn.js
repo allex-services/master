@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 var Path = require('path');
 process.on ('uncaughtException', function (reason) {
+  if (reason.code = 'ECONNRESET') return; //nodejs doesn't know how to deal with error handlers for this case
   if(reason.code !== 'MODULE_NOT_FOUND'){
     console.log('uncaughtException in allex child process',process.pid);
-    console.error(reason.stack);
     console.error(reason);
-  }else{
-    process.send({uncaughtException:{code: reason.code, message: reason.message}});
+    return;
   }
+  process.send({uncaughtException:{code: reason.code, message: reason.message}});
 });
 
 'use strict';
@@ -25,13 +25,20 @@ console.log = function(){
   console.trace();
   cl.apply(console,arguments);
 };
+var ce = console.error;
+console.error = function(){
+  console.log(new Error().stack);
+  ce.apply(console,arguments);
+};
 */
 
 execlib.serverLoggingSetup();
 
 var pe = process.exit;
 process.exit = function(code) {
-  console.trace();
+  if (code) {
+    console.trace();
+  }
   pe.apply(process, arguments);
 }
 
@@ -45,8 +52,8 @@ var APD = new ProcessDescriptor(spawndescriptorjson);
 lib.moduleRecognition({takeauxfrompath: runtimedirectory});
 global.ALLEX_PROCESS_DESCRIPTOR = APD;
 
-if(!APD.get('wsport')){
-  console.log('No WS port to start on');
+if(!APD.get('httpport')){
+  console.log('No Http port to start on');
   process.exit(1);
 }
 
@@ -67,21 +74,21 @@ if(APD.get('tcpport')){
     strategies: APD.get('strategies')
   });
 }
-if(APD.get('httpport')){
-  ports.push({
-    protocol: {
-      name: 'http',
-    },
-    port: APD.get('httpport'),
-    strategies: APD.get('strategies')
-  });
-}
 if(APD.get('wsport')){
   ports.push({
     protocol: {
-      name: 'ws'
+      name: 'ws',
     },
     port: APD.get('wsport'),
+    strategies: APD.get('strategies')
+  });
+}
+if(APD.get('httpport')){
+  ports.push({
+    protocol: {
+      name: 'http'
+    },
+    port: APD.get('httpport'),
     strategies: APD.get('strategies')
   });
 }
@@ -107,11 +114,7 @@ function contactMachineManager(){
 }
 
 function onNewServicePack(mastersink,newmodulename){
-  mastersink.call('notifyModuleEngaged',newmodulename).done(function(){
-    console.log('ok',arguments);
-  },function(){
-    console.error('nok',arguments);
-  });
+  qlib.promise2console(mastersink.call('notifyModuleEngaged',newmodulename), 'notifyModuleEngaged');
 }
 
 function start(mastersink){

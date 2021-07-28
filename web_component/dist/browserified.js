@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 ALLEX.execSuite.registry.add('allex_masterservice',require('./clientside')(ALLEX, ALLEX.execSuite.registry.get('allex_servicecontainerservice')));
 
 },{"./clientside":2}],2:[function(require,module,exports){
@@ -106,13 +106,14 @@ module.exports = {
       name: 'debug' //for testing only!
     },{
       name: 'debug_brk'
+    },{
+      name: 'prof'
     }]
   }
 };
 
 },{}],7:[function(require,module,exports){
-(function (global){
-var _taskName2moduleName = {};
+(function (global){(function (){
 function createFindAndRunTask(execlib){
   'use strict';
   var lib = execlib.lib,
@@ -156,40 +157,44 @@ function createFindAndRunTask(execlib){
     });
   };
   FindAndRunTask.prototype.onSink = function(sink){
-    try{
-      if(!sink){
-        if('function' !== typeof this.program.task.name || !this.program.continuous){
-          lib.runNext(this.destroy.bind(this));
-          return;
+    var taskisfunc;
+    if (!this.program) {
+      if (sink) {
+        sink.destroy();
+      }
+      return;
+    }
+    taskisfunc = lib.isFunction(this.program.task.name);
+    if(!sink){
+      if(!taskisfunc || !this.program.continuous){
+        if(taskisfunc) {
+          this.program.task.name(this.makeTaskPropertyHash(sink));
         }
-      }
-      var tph = this.program.task.propertyhash || {};
-      tph.sink = sink;
-      tph.taskRegistry = taskRegistry;
-      tph.execlib = execlib;
-      lib.traverse(tph,this.fillAsNeeded.bind(this,tph));
-      this.log('going for',this.program.task.name);
-      if('function' === typeof this.program.task.name){
-        this.program.task.name(tph);
-      }else{
-        this.prepareToIgnite(tph);
+        lib.runNext(this.destroy.bind(this));
+        return;
       }
     }
-    catch(e){
-      console.log(e.stack);
-      console.log(e);
+    this.log('going for',this.program.task.name);
+    if(taskisfunc) {
+      this.program.task.name(this.makeTaskPropertyHash(sink));
+    }else{
+      this.prepareToIgnite(this.makeTaskPropertyHash(sink));
     }
+  };
+  FindAndRunTask.prototype.makeTaskPropertyHash = function (sink) {
+    var tph;
+    if (!this.program) {
+      return {};
+    }
+    tph = this.program.task.propertyhash || {};
+    tph.sink = sink;
+    tph.taskRegistry = taskRegistry;
+    tph.execlib = execlib;
+    lib.traverse(tph,this.fillAsNeeded.bind(this,tph));
+    return tph;
   };
   FindAndRunTask.prototype.prepareToIgnite = function (tph) {
     registry.registerClientSide(tph.sink.modulename).then(this.onRemoteService.bind(this,tph));
-    /*
-    var modulename = _taskName2moduleName[this.program.task.name];
-    if (!modulename) {
-      throw lib.Error('PROGRAM_TASK_NAME_NOT_REGISTERED','Software vendor needs to update the lookup table for Task named '+this.program.task.name);
-    }
-    registry.register(modulename).done(this.onModuleReadyForIgnite.bind(this,tph));
-    this.log('registered',modulename,'to ignite',this.program.task.name);
-    */
   };
   FindAndRunTask.prototype.onRemoteService = function (tph, remoteservice) {
     var pn = this.program.task.name,
@@ -200,18 +205,6 @@ function createFindAndRunTask(execlib){
     try{
       taskRegistry.run(pn,tph);
     } catch (e) {
-      console.error('on servicepack', servicepack);
-      console.error(e.stack);
-      console.error(e);
-    }
-  };
-  FindAndRunTask.prototype.onModuleReadyForIgnite = function (tph, servicepack) {
-    this.log(registry.get('allex_cgiservice'));
-    this.log('igniting',this.program.task.name,'with',tph);
-    try{
-      taskRegistry.run(this.program.task.name,tph);
-    } catch (e) {
-      console.error('on servicepack', servicepack);
       console.error(e.stack);
       console.error(e);
     }
@@ -236,7 +229,7 @@ function createFindAndRunTask(execlib){
     lib.traverse(programtask.propertyhash,this.checkForFillYourself.bind(this));
   };
   var _propsForNeed = {
-      wsport: true
+      httpport: true
     },
     _propsForGlobalNeed = {
       ipaddress: true
@@ -284,9 +277,9 @@ function createFindAndRunTask(execlib){
 
 module.exports = createFindAndRunTask;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],8:[function(require,module,exports){
-(function (process,global){
+(function (process,global){(function (){
 var Path = require('path'),
   fs = require('fs');
 
@@ -370,17 +363,16 @@ function createFindMasterPidTask(execlib) {
 
 module.exports = createFindMasterPidTask;
 
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+}).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"_process":16,"fs":14,"path":15}],9:[function(require,module,exports){
-(function (global){
+(function (global){(function (){
 function createFindSinkTask(execlib, sinkhunters){
   'use strict';
   var lib = execlib.lib,
       q = lib.q,
       execSuite = execlib.execSuite,
       taskRegistry = execSuite.taskRegistry,
-      Task = execSuite.Task,
-      _fstid = 0;
+      Task = execSuite.Task;
 
   function getAcquireSinkFilter() {
     return {
@@ -402,12 +394,17 @@ function createFindSinkTask(execlib, sinkhunters){
   lib.inherit(SingleLanSinkHunter, sinkhunters.LanSinkHunter);
   SingleLanSinkHunter.prototype.getAcquireSinkFilter = getAcquireSinkFilter;
 
+  function NullSinkHunter () {
+  }
+  NullSinkHunter.prototype.destroy = lib.dummyFunc;
+  NullSinkHunter.prototype.go = lib.dummyFunc;
+
+
   function FindSinkTask(prophash){
-    //this.id = ++_fstid;
     Task.call(this,prophash);
     this.masterpid = prophash.masterpid || global.ALLEX_PROCESS_DESCRIPTOR.get('masterpid');
     if(!this.masterpid){
-      throw new lib.Error('NO_MASTER_PID','Property hash for FindSinkTask misses the masterpid property');
+      throw new lib.Error('NO_MASTER_PID', 'No "masterpid" property in property hash for FindSinkTask');
     }
     this.sinkname = prophash.sinkname;
     this.identity = prophash.identity;
@@ -423,10 +420,6 @@ function createFindSinkTask(execlib, sinkhunters){
   }
   lib.inherit(FindSinkTask,Task);
   FindSinkTask.prototype.destroy = function(){
-    /*
-    console.trace();
-    console.log('FindSinkTask', this.sinkname, 'destroying');
-    */
     if (this.subSinkHunter) {
       this.subSinkHunter.destroy();
     }
@@ -459,8 +452,8 @@ function createFindSinkTask(execlib, sinkhunters){
       lib.arryDestroyAll(this.hunters);
     }
     this.hunters = [
-      new sinkhunters.RegistrySinkHunter(this,0),
-      new SingleMachineRecordSinkHunter(this,1),
+      new (this.addressinfo==='global' ? NullSinkHunter : sinkhunters.RegistrySinkHunter)(this,0),
+      new (this.addressinfo==='global' ? NullSinkHunter : SingleMachineRecordSinkHunter)(this,1),
       new SingleLanSinkHunter(this,2)
     ];
     this.hunters.forEach(function(h){
@@ -468,14 +461,15 @@ function createFindSinkTask(execlib, sinkhunters){
     });
   };
   FindSinkTask.prototype.getSinkName = function (index) {
+    index = index||0;
     if (lib.isArray(this.sinkname)) {
-      var s = this.sinkname[index||0];
+      var s = this.sinkname[index];
       if (!s) {
         console.log('What the #! is in this.sinkname?', this.sinkname, 'for index', index);
         this.destroy();
         return null;
       }
-      return this.sinkname[index||0].name || this.sinkname[index||0];
+      return this.sinkname[index].name || this.sinkname[index];
     }
     return this.sinkname;
   };
@@ -485,25 +479,27 @@ function createFindSinkTask(execlib, sinkhunters){
       if (index===this.sinkname.length-1) {
         return this.identity;
       }
-      return this.sinkname[index||0].identity || {};
+      return this.sinkname[index].identity || {};
     } else {
       return this.identity;
     }
   };
   FindSinkTask.prototype.getPropertyHash = function (index) {
+    index = index || 0;
     if (lib.isArray(this.sinkname)) {
       if (index===this.sinkname.length-1) {
         return this.prophash;
       }
-      return this.sinkname[index||0].propertyhash || {};
+      return this.sinkname[index].propertyhash || {};
     } else {
       return this.prophash;
     }
   };
   FindSinkTask.prototype.isDirect = function (index) {
     var si;
+    index = index || 0;
     if (lib.isArray(this.sinkname)) {
-      si = this.sinkname[index||0];
+      si = this.sinkname[index];
       if (!si) {
         return false;
       }
@@ -539,7 +535,7 @@ function createFindSinkTask(execlib, sinkhunters){
       this.acceptSink(sink,level,record);
       return;
     }
-    //console.log('rejecting');
+    //console.log('FindSinkTask with addressinfo', this.addressinfo, 'will reject the sink at level', level);
     sink.destroy();
   };
   FindSinkTask.prototype.acceptSink = function (sink,level,record){
@@ -566,7 +562,9 @@ function createFindSinkTask(execlib, sinkhunters){
       lib.arryDestroyAll(this.hunters);
       this.hunters = null;
       //console.log('acceptSink', level);
-      this.sinkDestroyedListener = sink.destroyed.attach(this.forgetSink.bind(this,level));
+      if (sink.destroyed) {
+        this.sinkDestroyedListener = sink.destroyed.attach(this.forgetSink.bind(this,level));
+      }
       this.sink = sink;
       this.callbackTheSink(sink);
     }
@@ -605,9 +603,9 @@ function createFindSinkTask(execlib, sinkhunters){
 
 module.exports = createFindSinkTask;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],10:[function(require,module,exports){
-(function (global){
+(function (global){(function (){
 function createFindSinksByModuleNameTask(execlib, sinkhunters) {
   'use strict';
 
@@ -805,9 +803,8 @@ function createFindSinksByModuleNameTask(execlib, sinkhunters) {
 
 module.exports = createFindSinksByModuleNameTask;
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],11:[function(require,module,exports){
-(function (process,global){
 function createNatThisTask(execlib) {
   'use strict';
   var lib = execlib.lib,
@@ -848,15 +845,8 @@ function createNatThisTask(execlib) {
     if (this.acquireNatSinkTask) {
       return;
     }
-    this.acquireNatSinkTask = taskRegistry.run('acquireSink', {
-      connectionString: 'socket:///tmp/nat.'+global.ALLEX_PROCESS_DESCRIPTOR.masterpid,
-      identity: {
-        samemachineprocess: {
-          pid: process.pid,
-          role: 'user'
-        }
-      },
-      onSink: this.onNatSink.bind(this)
+    this.acquireNatSinkTask = taskRegistry.run('findNatSink', {
+      cb: this.onNatSink.bind(this)
     });
   };
   NatThisTask.prototype.onNatSink = function (sink) {
@@ -871,11 +861,10 @@ function createNatThisTask(execlib) {
     }
   };
   NatThisTask.prototype.onNatLookup = function (address, port) {
-    console.log('nat', this.iaddress+':'+this.iport, '=>', address+':'+port);
-    if(!this.cb){
-      return;
+    //console.log('nat', this.iaddress+':'+this.iport, '=>', address+':'+port);
+    if(this.cb){
+      this.cb(address, port);
     }
-    this.cb(address, port);
     if (this.singleshot) {
       this.destroy();
     }
@@ -894,9 +883,8 @@ function createNatThisTask(execlib) {
 
 module.exports = createNatThisTask;
 
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":16}],12:[function(require,module,exports){
-(function (process){
+},{}],12:[function(require,module,exports){
+(function (process){(function (){
 function createSinkHunters(execlib) {
   'use strict';
 
@@ -904,8 +892,8 @@ function createSinkHunters(execlib) {
       q = lib.q,
       execSuite = execlib.execSuite,
       registry = execSuite.registry,
-      taskRegistry = execSuite.taskRegistry,
-      sshid = 0;
+      taskRegistry = execSuite.taskRegistry;
+
 
   function SinkChainListener () {
     this.listeners = [];
@@ -938,8 +926,8 @@ function createSinkHunters(execlib) {
     this.listeners.push(sink.destroyed.attach(this.sinkDown.bind(this, ind)));
   };
 
+
   function SubSinkHunter(findsinktask, sink, level) {
-    //this.id = ++sshid;
     if (!sink) {
       console.error('SubSinkHunter cannot start on a null sink');
     }
@@ -950,7 +938,6 @@ function createSinkHunters(execlib) {
     this.goOn(sink, 0);
   }
   SubSinkHunter.prototype.destroy = function () {
-    //console.log(this.id, 'dying');
     var l = this.level;
     if (this.destroyListeners) {
       lib.arryDestroyAll(this.destroyListeners);
@@ -1010,6 +997,7 @@ function createSinkHunters(execlib) {
     //console.log('SubSinkHunter got subsink');
     this.goOn(sink, acquired);
   };
+
 
   function SinkHunter(task,level){
     this.task = task;
@@ -1075,6 +1063,12 @@ function createSinkHunters(execlib) {
     this.handleSuperSink();
   };
   RegistrySinkHunter.prototype.reportSink = function (sink) {
+    if (!this.task) {
+      if (sink) {
+        sink.destroy();
+      }
+      return;
+    }
     this.task.reportSink(sink,this.level);
   };
   RegistrySinkHunter.prototype.onFail = function(){
@@ -1111,6 +1105,9 @@ function createSinkHunters(execlib) {
     SinkHunter.prototype.destroy.call(this);
   };
   RemoteSinkHunter.prototype.go = function(){
+    if (!this.task) { //I'm dead
+      return;
+    }
     if(this.baseAcquireSinkTask){
       return;
     }
@@ -1131,7 +1128,7 @@ function createSinkHunters(execlib) {
   };
   RemoteSinkHunter.prototype.createNonDirectBaseAcquireSinkTaskPropertyHash = function () {
     return {
-      connectionString:'socket:///tmp/'+this.dataSourceSinkName()+'.'+this.task.masterpid,
+      connectionString:'socket://'+execSuite.tmpPipeDir()+'/'+this.dataSourceSinkName()+'.'+this.task.masterpid,
       identity:{
         samemachineprocess:{
           pid: process.pid,
@@ -1161,6 +1158,10 @@ function createSinkHunters(execlib) {
   };
   RemoteSinkHunter.prototype.onDataSourceSink = function(datasourcesink){
     this.datasourcesink = datasourcesink;
+    if(this.materializeQueryTask){
+      this.materializeQueryTask.destroy();
+    }
+    this.materializeQueryTask = null;
     if(datasourcesink){
       this.materializeQueryTask = taskRegistry.run('materializeQuery',{
         sink: datasourcesink,
@@ -1170,11 +1171,6 @@ function createSinkHunters(execlib) {
         onRecordCreation: this.onSinkRecordFound.bind(this),
         onRecordDeletion: this.onSinkRecordDeleted.bind(this)
       });
-    }else{
-      if(this.materializeQueryTask){
-        this.materializeQueryTask.destroy();
-      }
-      this.materializeQueryTask = null;
     }
   };
   RemoteSinkHunter.prototype.onSinkRecordFound = function(sinkrecord){
@@ -1206,18 +1202,25 @@ function createSinkHunters(execlib) {
     }
   };
   RemoteSinkHunter.prototype.reportSink = function(sinkrecord,sink){
-    try {
-    this.materializeQueryTask.destroy();
-    this.materializeQueryTask = null;
-    this.datasourcesink.destroy();
-    this.datasourcesink = null;
-    this.acquireSinkTask.destroy();
-    this.acquireSinkTask = null;
-    this.task.reportSink(sink,this.level,sinkrecord);
-    } catch (e) {
-      console.error(e.stack);
-      console.error(e);
+    if (this.materializeQueryTask) {
+      this.materializeQueryTask.destroy();
     }
+    this.materializeQueryTask = null;
+    if (this.datasourcesink) {
+      this.datasourcesink.destroy();
+    }
+    this.datasourcesink = null;
+    if (this.acquireSinkTask) {
+      this.acquireSinkTask.destroy();
+    }
+    this.acquireSinkTask = null;
+    if (!this.task) {
+      if (sink) {
+        sink.destroy();
+      }
+      return;
+    }
+    this.task.reportSink(sink,this.level,sinkrecord);
   };
 
   function MachineRecordSinkHunter(task,level){
@@ -1234,7 +1237,7 @@ function createSinkHunters(execlib) {
       smi[i] = idnt[i];
     }
     return {
-      connectionString: 'socket:///tmp/allexprocess.'+sinkrecord.pid,
+      connectionString: 'socket://'+execSuite.tmpPipeDir()+'/allexprocess.'+sinkrecord.pid,
       identity: {samemachineprocess:smi}
     };
   };
@@ -1247,21 +1250,27 @@ function createSinkHunters(execlib) {
     return 'availablelanservices';
   };
   LanSinkHunter.prototype.createAcquireSinkPropHash = function(sinkrecord){
-    var connectionString;
-    if(sinkrecord.wsport){
+    var connectionString, strategiesimplemented, identity, _id, myidentity, _myid;
+    if (sinkrecord.httpport){
+      connectionString = 'http://'+sinkrecord.ipaddress+':'+sinkrecord.httpport;
+    } else if(sinkrecord.wsport){
       connectionString = 'ws://'+sinkrecord.ipaddress+':'+sinkrecord.wsport;
-    }else{
     }
     if(!connectionString){
       console.error('Could not make the connectionString out of lansinkrecord',sinkrecord);
       return null;
     }
-    var strategiesimplemented = Object.keys(sinkrecord.strategies), myidentity = this.task.getIdentity(), identity;
+    strategiesimplemented = Object.keys(sinkrecord.strategies);
+    myidentity = this.task.getIdentity();
     if(strategiesimplemented.length){
       identity = {};
+      _id = identity;
+      _myid = myidentity;
       strategiesimplemented.forEach(function(strat){
-        identity[strat] = myidentity;
+        _id[strat] = _myid;
       });
+      _myid = null;
+      _id = null;
     }else{
       identity = {
         ip: myidentity
@@ -1284,14 +1293,17 @@ function createSinkHunters(execlib) {
 
 module.exports = createSinkHunters;
 
-}).call(this,require('_process'))
+}).call(this)}).call(this,require('_process'))
 },{"_process":16}],13:[function(require,module,exports){
-module.exports = ['tcpport','httpport','wsport','pid','debug','debug_brk'];
+module.exports = ['tcpport','httpport','wsport','pid','debug','debug_brk','prof'];
 
 },{}],14:[function(require,module,exports){
 
 },{}],15:[function(require,module,exports){
-(function (process){
+(function (process){(function (){
+// .dirname, .basename, and .extname methods are extracted from Node.js v8.11.1,
+// backported and transplited with Babel, with backwards-compat fixes
+
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -1342,14 +1354,6 @@ function normalizeArray(parts, allowAboveRoot) {
 
   return parts;
 }
-
-// Split a filename into [root, dir, basename, ext], unix version
-// 'root' is just a slash, or nothing.
-var splitPathRe =
-    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-var splitPath = function(filename) {
-  return splitPathRe.exec(filename).slice(1);
-};
 
 // path.resolve([from ...], to)
 // posix version
@@ -1466,37 +1470,120 @@ exports.relative = function(from, to) {
 exports.sep = '/';
 exports.delimiter = ':';
 
-exports.dirname = function(path) {
-  var result = splitPath(path),
-      root = result[0],
-      dir = result[1];
-
-  if (!root && !dir) {
-    // No dirname whatsoever
-    return '.';
+exports.dirname = function (path) {
+  if (typeof path !== 'string') path = path + '';
+  if (path.length === 0) return '.';
+  var code = path.charCodeAt(0);
+  var hasRoot = code === 47 /*/*/;
+  var end = -1;
+  var matchedSlash = true;
+  for (var i = path.length - 1; i >= 1; --i) {
+    code = path.charCodeAt(i);
+    if (code === 47 /*/*/) {
+        if (!matchedSlash) {
+          end = i;
+          break;
+        }
+      } else {
+      // We saw the first non-path separator
+      matchedSlash = false;
+    }
   }
 
-  if (dir) {
-    // It has a dirname, strip trailing slash
-    dir = dir.substr(0, dir.length - 1);
+  if (end === -1) return hasRoot ? '/' : '.';
+  if (hasRoot && end === 1) {
+    // return '//';
+    // Backwards-compat fix:
+    return '/';
   }
-
-  return root + dir;
+  return path.slice(0, end);
 };
 
+function basename(path) {
+  if (typeof path !== 'string') path = path + '';
 
-exports.basename = function(path, ext) {
-  var f = splitPath(path)[2];
-  // TODO: make this comparison case-insensitive on windows?
+  var start = 0;
+  var end = -1;
+  var matchedSlash = true;
+  var i;
+
+  for (i = path.length - 1; i >= 0; --i) {
+    if (path.charCodeAt(i) === 47 /*/*/) {
+        // If we reached a path separator that was not part of a set of path
+        // separators at the end of the string, stop now
+        if (!matchedSlash) {
+          start = i + 1;
+          break;
+        }
+      } else if (end === -1) {
+      // We saw the first non-path separator, mark this as the end of our
+      // path component
+      matchedSlash = false;
+      end = i + 1;
+    }
+  }
+
+  if (end === -1) return '';
+  return path.slice(start, end);
+}
+
+// Uses a mixed approach for backwards-compatibility, as ext behavior changed
+// in new Node.js versions, so only basename() above is backported here
+exports.basename = function (path, ext) {
+  var f = basename(path);
   if (ext && f.substr(-1 * ext.length) === ext) {
     f = f.substr(0, f.length - ext.length);
   }
   return f;
 };
 
+exports.extname = function (path) {
+  if (typeof path !== 'string') path = path + '';
+  var startDot = -1;
+  var startPart = 0;
+  var end = -1;
+  var matchedSlash = true;
+  // Track the state of characters (if any) we see before our first dot and
+  // after any path separator we find
+  var preDotState = 0;
+  for (var i = path.length - 1; i >= 0; --i) {
+    var code = path.charCodeAt(i);
+    if (code === 47 /*/*/) {
+        // If we reached a path separator that was not part of a set of path
+        // separators at the end of the string, stop now
+        if (!matchedSlash) {
+          startPart = i + 1;
+          break;
+        }
+        continue;
+      }
+    if (end === -1) {
+      // We saw the first non-path separator, mark this as the end of our
+      // extension
+      matchedSlash = false;
+      end = i + 1;
+    }
+    if (code === 46 /*.*/) {
+        // If this is our first dot, mark it as the start of our extension
+        if (startDot === -1)
+          startDot = i;
+        else if (preDotState !== 1)
+          preDotState = 1;
+    } else if (startDot !== -1) {
+      // We saw a non-dot and non-path separator before our dot, so we should
+      // have a good chance at having a non-empty extension
+      preDotState = -1;
+    }
+  }
 
-exports.extname = function(path) {
-  return splitPath(path)[3];
+  if (startDot === -1 || end === -1 ||
+      // We saw a non-dot character immediately before the dot
+      preDotState === 0 ||
+      // The (right-most) trimmed path component is exactly '..'
+      preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
+    return '';
+  }
+  return path.slice(startDot, end);
 };
 
 function filter (xs, f) {
@@ -1517,11 +1604,97 @@ var substr = 'ab'.substr(-1) === 'b'
     }
 ;
 
-}).call(this,require('_process'))
+}).call(this)}).call(this,require('_process'))
 },{"_process":16}],16:[function(require,module,exports){
 // shim for using process in browser
-
 var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
 var queue = [];
 var draining = false;
 var currentQueue;
@@ -1546,7 +1719,7 @@ function drainQueue() {
     if (draining) {
         return;
     }
-    var timeout = setTimeout(cleanUpNextTick);
+    var timeout = runTimeout(cleanUpNextTick);
     draining = true;
 
     var len = queue.length;
@@ -1563,7 +1736,7 @@ function drainQueue() {
     }
     currentQueue = null;
     draining = false;
-    clearTimeout(timeout);
+    runClearTimeout(timeout);
 }
 
 process.nextTick = function (fun) {
@@ -1575,7 +1748,7 @@ process.nextTick = function (fun) {
     }
     queue.push(new Item(fun, args));
     if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
+        runTimeout(drainQueue);
     }
 };
 
@@ -1603,6 +1776,10 @@ process.off = noop;
 process.removeListener = noop;
 process.removeAllListeners = noop;
 process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
