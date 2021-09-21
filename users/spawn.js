@@ -38,6 +38,8 @@ var pe = process.exit;
 process.exit = function(code) {
   if (code) {
     console.trace();
+  } else {
+    console.log('exit');
   }
   pe.apply(process, arguments);
 }
