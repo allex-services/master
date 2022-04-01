@@ -1,3 +1,11 @@
+var _okToRun = true;
+function timeToDie () {
+  _okToRun = false;
+}
+process.on('SIGINT', timeToDie);
+process.on('SIGTERM', timeToDie);
+process.on('exit', timeToDie);
+
 function createServiceUser(execlib,ParentUser){
   'use strict';
   var lib = execlib.lib,
@@ -25,6 +33,9 @@ function createServiceUser(execlib,ParentUser){
     return d.promise;
   };
   function portsucceeder(port, defer, result) {
+    if (!_okToRun) {
+      return;
+    }
     if (result === true) {
       defer.resolve(port);
     } else {
@@ -36,6 +47,9 @@ function createServiceUser(execlib,ParentUser){
     }
   }
   function portfailer(port, defer, error) {
+    if (!_okToRun) {
+      return;
+    }
     console.error('port', port, 'check failed', error, 'will retry in 1 second');
     lib.runNext(portchecker.bind(null, port, defer), lib.intervals.Second);
   }
@@ -77,11 +91,7 @@ function createServiceUser(execlib,ParentUser){
     */
     //console.log('spawnrecord:',spawnrecord, 'going to check for ports');
     return q.allSettled(['tcp', 'http', 'ws'].map(this.portPromise.bind(this, spawnrecord))).then(
-      this.onReadyForSpawn.bind(this,spawnrecord),
-      function (err) {
-        console.error('master spawn oooops', err);
-        throw err;
-      }
+      this.onReadyForSpawn.bind(this,spawnrecord)
     );
   };
   ServiceUser.prototype._onSpawned = function(spawndescriptor,sink){
@@ -90,6 +100,9 @@ function createServiceUser(execlib,ParentUser){
     return q(sink);
   };
   ServiceUser.prototype._onSinkDown = function(spawndescriptor){
+    if (!_okToRun) {
+      return;
+    }
     this.__service.tcpports.reclaim(spawndescriptor.tcpport);
     this.__service.httpports.reclaim(spawndescriptor.httpport);
     this.__service.wsports.reclaim(spawndescriptor.wsport);
