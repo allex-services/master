@@ -10,8 +10,11 @@ function createProcessDescriptor(execlib){
       this.prophash = prophash.propertyhash || {};
       this.strategies = prophash.strategies || {};
       this.tcpport = prophash.tcpport;
+      this.tcpoptions = prophash.tcpoptions;
       this.httpport = prophash.httpport;
+      this.httpoptions = prophash.httpoptions;
       this.wsport = prophash.wsport;
+      this.wsoptions = prophash.wsoptions;
       this.masterpid = prophash.masterpid;
       this.mastersink = null;
     }catch (e) {

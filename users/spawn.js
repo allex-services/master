@@ -73,6 +73,7 @@ if(APD.get('tcpport')){
       name: 'socket',
     },
     port: APD.get('tcpport'),
+    options: APD.get('tcpoptions'),
     strategies: APD.get('strategies')
   });
 }
@@ -82,6 +83,7 @@ if(APD.get('wsport')){
       name: 'ws',
     },
     port: APD.get('wsport'),
+    options: APD.get('wsoptions'),
     strategies: APD.get('strategies')
   });
 }
@@ -91,6 +93,7 @@ if(APD.get('httpport')){
       name: 'http'
     },
     port: APD.get('httpport'),
+    options: APD.get('httpoptions'),
     strategies: APD.get('strategies')
   });
 }

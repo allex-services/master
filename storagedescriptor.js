@@ -16,9 +16,15 @@ module.exports = {
     },{
       name: 'tcpport'
     },{
+      name: 'tcpoptions'
+    },{
       name: 'httpport'
     },{
+      name: 'httpoptions'
+    },{
       name: 'wsport'
+    },{
+      name: 'wsoptions'
     },{
       name: 'pid'
     },{
