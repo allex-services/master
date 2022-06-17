@@ -96,8 +96,10 @@ function createServiceUser(execlib,ParentUser){
   };
   ServiceUser.prototype._onSpawned = function(spawndescriptor,sink){
     spawndescriptor.pid = sink.clientuser.client.talker.proc.pid;
+    sink.destroyed.pazipid = spawndescriptor.pid;
     sink.extendTo(sink.destroyed.attach(this._onSinkDown.bind(this,spawndescriptor)));
-    return q(sink);
+    spawndescriptor = null;
+    return sink;
   };
   ServiceUser.prototype._onSinkDown = function(spawndescriptor){
     if (!_okToRun) {
@@ -142,7 +144,8 @@ function createServiceUser(execlib,ParentUser){
       ALLEX_SPAWN:spawndescriptor,
       ALLEX_RUNTIMEDIRECTORY:this.__service.runTimeDir
     })),
-      forkstring = 'fork://'+__dirname+'/spawn.js?env='+envj;
+      forkstring = 'fork://'+__dirname+'/spawn.js?env='+envj,
+      ret;
     if(spawndescriptor.debug){
       forkstring += ('&debug='+spawndescriptor.debug);
     }else if(spawndescriptor.debug_brk){
@@ -150,13 +153,15 @@ function createServiceUser(execlib,ParentUser){
     }else if(spawndescriptor.prof){
       forkstring += '&prof=true';
     }
-    return registry.spawn({},forkstring,{}).then(
+    ret = registry.spawn({},forkstring,{}).then(
       this._onSpawned.bind(this,spawndescriptor)
     );
+    spawndescriptor = null;
+    return ret;
   }
 
   ServiceUser.prototype.procSpawner = function (spawndescriptor) {
-    var domainandmodulename = spawndescriptor.modulename.split(':');
+    var domainandmodulename = spawndescriptor.modulename.split(':'), ret;
     if (domainandmodulename.length != 2) {
       return q.reject(new lib.Error('INVALID_DOMAIN_AND_MODULENAME', spawndescriptor.modulename+' has to be formed as "domain:modulename"'));
     }
@@ -170,9 +175,11 @@ function createServiceUser(execlib,ParentUser){
       ALLEX_RUNTIMEDIRECTORY:this.__service.runTimeDir
     })),
       spawnstring = 'spawn://AllexJSDotNet?env='+envj;
-    return registry.spawn({},spawnstring,{}).then(
+    ret = registry.spawn({},spawnstring,{}).then(
       this._onSpawned.bind(this,spawndescriptor)
     );
+    spawndescriptor = null;
+    return ret;
   }
 
   return ServiceUser;
