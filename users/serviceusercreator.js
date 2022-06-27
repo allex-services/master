@@ -2,9 +2,6 @@ var _okToRun = true;
 function timeToDie () {
   _okToRun = false;
 }
-process.on('SIGINT', timeToDie);
-process.on('SIGTERM', timeToDie);
-process.on('exit', timeToDie);
 
 function createServiceUser(execlib,ParentUser){
   'use strict';
@@ -12,6 +9,8 @@ function createServiceUser(execlib,ParentUser){
     q = lib.q,
     qlib = lib.qlib,
     registry = execlib.execSuite.registry;
+
+  lib.shouldClose.attachForSingleShot(timeToDie);
 
   if(!ParentUser){
     ParentUser = execlib.registry.get('.').Service.prototype.userFactory.get('user');
@@ -97,18 +96,23 @@ function createServiceUser(execlib,ParentUser){
   ServiceUser.prototype._onSpawned = function(spawndescriptor,sink){
     spawndescriptor.pid = sink.clientuser.client.talker.proc.pid;
     sink.destroyed.pazipid = spawndescriptor.pid;
-    sink.extendTo(sink.destroyed.attach(this._onSinkDown.bind(this,spawndescriptor)));
+    sink.destroyed.attachForSingleShot(this._onSinkDown.bind(this,spawndescriptor));
     spawndescriptor = null;
     return sink;
   };
-  ServiceUser.prototype._onSinkDown = function(spawndescriptor){
+  ServiceUser.prototype._onSinkDown = function(spawndescriptor, exception){
     if (!_okToRun) {
       return;
     }
+    console.log('process down', exception);
     this.__service.tcpports.reclaim(spawndescriptor.tcpport);
     this.__service.httpports.reclaim(spawndescriptor.httpport);
     this.__service.wsports.reclaim(spawndescriptor.wsport);
-    lib.runNext(this.killChild.bind(this, spawndescriptor.pid), 30*lib.intervals.Second);
+    if (!(exception && exception.code == 'SERVER_SIDE_KILL')) { //it's me who actually killed this guy
+      lib.runNext(this.killChild.bind(this, spawndescriptor.pid), 30*lib.intervals.Second);
+      return;
+    }
+    this.killChild(spawndescriptor.pid);
   };
   ServiceUser.prototype.killChild = function (childpid) {
     console.log('disposing of closed process', childpid);
