@@ -16,7 +16,7 @@ var execlib = require('allex'),
     qlib = lib.qlib,
     execSuite = execlib.execSuite,
     ProcessDescriptor = require('./processdescriptorcreator')(execlib),
-    unixsocketcleaner = require('allex_unixsocketcleanerserverruntimelib'),
+    unixsocketcleaner = require('allex_unixsocketcleanerserverruntimelib')(lib),
     taskRegistry = execSuite.taskRegistry;
 
 /*
