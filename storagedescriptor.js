@@ -33,6 +33,8 @@ module.exports = {
       name: 'debug_brk'
     },{
       name: 'prof'
+    },{
+      name: 'gate'
     }]
   }
 };

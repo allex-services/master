@@ -114,6 +114,8 @@ module.exports = {
       name: 'debug_brk'
     },{
       name: 'prof'
+    },{
+      name: 'gate'
     }]
   }
 };
@@ -1301,7 +1303,7 @@ module.exports = createSinkHunters;
 
 }).call(this)}).call(this,require('_process'))
 },{"_process":16}],13:[function(require,module,exports){
-module.exports = ['tcpport', 'tcpoptions','httpport', 'httpoptions','wsport', 'wsoptions','pid','debug','debug_brk','prof'];
+module.exports = ['tcpport', 'tcpoptions','httpport', 'httpoptions','wsport', 'wsoptions','pid','debug','debug_brk','prof', 'gate'];
 
 },{}],14:[function(require,module,exports){
 

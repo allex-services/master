@@ -16,6 +16,7 @@ function createProcessDescriptor(execlib){
       this.wsport = prophash.wsport;
       this.wsoptions = prophash.wsoptions;
       this.masterpid = prophash.masterpid;
+      this.gate = prophash.gate;      
       this.mastersink = null;
     }catch (e) {
       console.log ('Unable to create process descriptor due to ',e.message, e.stack);

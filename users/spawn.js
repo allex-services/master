@@ -146,6 +146,7 @@ function start(mastersink){
       instancename:APD.get('instancename'),
       propertyhash:APD.get('prophash')
     },
+    gate: APD.get('gate'),
     ports:ports
   }).done(
     null,
